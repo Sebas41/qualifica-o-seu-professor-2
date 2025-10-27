@@ -2,49 +2,43 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - '**'
   pull_request:
-    branches: [ main ]
+    branches:
+      - '**'
 
 jobs:
-  build-and-test:
+  test:
     runs-on: ubuntu-latest
-
     services:
       postgres:
-        image: postgres:15
+        image: postgres:16
+        env:
+          POSTGRES_DB: qualifica
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
-        env:
-          POSTGRES_DB: test
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
         options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
+          --health-cmd "pg_isready -U postgres -d qualifica" \
+          --health-interval 10s \
+          --health-timeout 5s \
           --health-retries 5
-
     env:
-      DATABASE_HOST: localhost
+      DATABASE_HOST: 127.0.0.1
       DATABASE_PORT: 5432
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
-      DATABASE_NAME: test
+      DATABASE_NAME: qualifica
       JWT_SECRET: test-secret
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           cache: 'npm'
-
       - name: Install dependencies
         run: npm ci
-
       - name: Run tests with coverage
         run: npm run test:cov
