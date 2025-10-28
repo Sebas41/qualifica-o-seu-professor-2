@@ -186,13 +186,30 @@ Professor (N) <─── (1) University
 
 ## ✅ **Checklist de Migración**
 
-- [ ] Módulo Auth (JWT Strategy, Guards, DTOs)
-- [ ] Módulo Users (CRUD + perfil)
+- [x] Módulo Auth (JWT Strategy, Guards, DTOs)  **COMPLETADO**
+- [x] Módulo Users (CRUD + perfil)  **COMPLETADO**
 - [ ] Módulo Universities (CRUD público/admin)
 - [ ] Módulo Professors (CRUD + populate university)
 - [ ] Módulo Comments (CRUD + lógica dueño/admin)
-- [ ] Middlewares → Guards de NestJS
-- [ ] Validación Zod → class-validator
-- [ ] MongoDB + Mongoose (compatible con NestJS)
+- [x] Middlewares → Guards de NestJS  **COMPLETADO**
+- [x] Validación Zod → class-validator  **COMPLETADO**
+- [x] PostgreSQL + TypeORM  **COMPLETADO**
 - [ ] Rate limiting (usar `@nestjs/throttler`)
 - [ ] Testing (Jest ya está configurado)
+
+---
+
+
+
+## **ESTADO ACTUAL DEL PROYECTO**
+
+| Módulo | Estado | Endpoints |
+|--------|--------|-----------|
+| **Auth** |  Completo | 3/3 |
+| **Users** |  Completo | 6/6 |
+| **Universities** |  Pendiente | 0/5 |
+| **Professors** |  Pendiente | 0/5 |
+| **Comments** |  Pendiente | 0/5 |
+| **Ratings** |  Pendiente | 0/5 |
+
+**Progreso Total:** 9/24 endpoints (37.5%)

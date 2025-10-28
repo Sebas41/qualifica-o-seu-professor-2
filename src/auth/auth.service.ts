@@ -1,13 +1,13 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { UserRole } from '../common/enums/role.enum';
+import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { User } from '../users/entities/user.entity';
-import { UserRole } from '../common/enums/role.enum';
 
 @Injectable()
 export class AuthService {
@@ -17,8 +17,18 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<{ accessToken: string; user: User }> {
-    const user = await this.usersService.create({ ...registerDto, role: UserRole.STUDENT });
+  async register(registerDto: RegisterDto, currentUser?: User): Promise<{ accessToken: string; user: User }> {
+    // Solo admins pueden crear otros admins
+    if (registerDto.role === UserRole.ADMIN && (!currentUser || currentUser.role !== UserRole.ADMIN)) {
+      throw new UnauthorizedException('Solo los administradores pueden crear otros administradores');
+    }
+
+    // Si no hay usuario actual, solo permitir crear estudiantes
+    if (!currentUser && registerDto.role === UserRole.ADMIN) {
+      throw new UnauthorizedException('Solo los administradores pueden crear otros administradores');
+    }
+
+    const user = await this.usersService.create(registerDto);
     const accessToken = await this.generateToken(user);
     return { accessToken, user };
   }
@@ -27,6 +37,10 @@ export class AuthService {
     const user = await this.validateUser(loginDto.email, loginDto.password);
     const accessToken = await this.generateToken(user);
     return { accessToken, user };
+  }
+
+  async getProfile(userId: string): Promise<User> {
+    return this.usersService.findOne(userId);
   }
 
   private async validateUser(email: string, password: string): Promise<User> {

@@ -1,3 +1,4 @@
+import * as bcrypt from 'bcrypt';
 import {
   BeforeInsert,
   BeforeUpdate,
@@ -8,9 +9,8 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import * as bcrypt from 'bcrypt';
-import { Rating } from '../../ratings/entities/rating.entity';
 import { UserRole } from '../../common/enums/role.enum';
+import { Rating } from '../../ratings/entities/rating.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -23,8 +23,8 @@ export class User {
   @Column()
   password!: string;
 
-  @Column({ name: 'full_name' })
-  fullName!: string;
+  @Column({ name: 'name' })
+  name!: string;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.STUDENT })
   role!: UserRole;

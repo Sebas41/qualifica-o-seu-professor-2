@@ -30,14 +30,19 @@ describe('AuthService', () => {
   });
 
   it('should register a user and return token', async () => {
-    const dto: RegisterDto = { email: 'new@example.com', password: 'Secret123', fullName: 'New User' };
-    const user = { id: '1', email: dto.email, password: 'hashed', role: UserRole.STUDENT } as any;
+    const dto: RegisterDto = { 
+      name: 'New User', 
+      email: 'new@example.com', 
+      password: 'Secret123', 
+      role: UserRole.STUDENT 
+    };
+    const user = { id: '1', name: dto.name, email: dto.email, password: 'hashed', role: UserRole.STUDENT } as any;
     usersService.create.mockResolvedValue(user);
     jwtService.signAsync.mockResolvedValue('token');
 
     const result = await service.register(dto);
 
-    expect(usersService.create).toHaveBeenCalledWith({ ...dto, role: UserRole.STUDENT });
+    expect(usersService.create).toHaveBeenCalledWith(dto);
     expect(result.accessToken).toBe('token');
     expect(result.user).toEqual(user);
   });
@@ -69,5 +74,46 @@ describe('AuthService', () => {
     usersService.findByEmail.mockResolvedValue({ id: '1', email: dto.email, password: hashed, role: UserRole.STUDENT } as any);
 
     await expect(service.login(dto)).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('should allow admin to create another admin', async () => {
+    const dto: RegisterDto = { 
+      name: 'Admin User', 
+      email: 'admin2@example.com', 
+      password: 'Secret123', 
+      role: UserRole.ADMIN 
+    };
+    const currentUser = { id: '1', role: UserRole.ADMIN } as any;
+    const user = { id: '2', name: dto.name, email: dto.email, password: 'hashed', role: UserRole.ADMIN } as any;
+    usersService.create.mockResolvedValue(user);
+    jwtService.signAsync.mockResolvedValue('token');
+
+    const result = await service.register(dto, currentUser);
+
+    expect(usersService.create).toHaveBeenCalledWith(dto);
+    expect(result.accessToken).toBe('token');
+  });
+
+  it('should prevent non-admin from creating admin', async () => {
+    const dto: RegisterDto = { 
+      name: 'Admin User', 
+      email: 'admin2@example.com', 
+      password: 'Secret123', 
+      role: UserRole.ADMIN 
+    };
+    const currentUser = { id: '1', role: UserRole.STUDENT } as any;
+
+    await expect(service.register(dto, currentUser)).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('should prevent unauthenticated user from creating admin', async () => {
+    const dto: RegisterDto = { 
+      name: 'Admin User', 
+      email: 'admin2@example.com', 
+      password: 'Secret123', 
+      role: UserRole.ADMIN 
+    };
+
+    await expect(service.register(dto)).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });
