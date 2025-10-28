@@ -1,12 +1,13 @@
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
+import { Professor } from '../../professors/entities/professor.entity';
 import { User } from '../../users/entities/user.entity';
 
 @Entity({ name: 'ratings' })
@@ -30,9 +31,9 @@ export class Rating {
   @JoinColumn({ name: 'student_id' })
   student!: User;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => Professor, (professor) => professor.ratings)
   @JoinColumn({ name: 'professor_id' })
-  professor!: User;
+  professor!: Professor;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

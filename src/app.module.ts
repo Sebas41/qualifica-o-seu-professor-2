@@ -8,6 +8,7 @@ import { ProfessorsModule } from './professors/professors.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { SeedModule } from './seed/seed.module';
 import { TestController } from './test.controller';
+import { UniversitiesModule } from './universities/universities.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -29,6 +30,7 @@ import { UsersModule } from './users/users.module';
     CommonModule,
     UsersModule,
     AuthModule,
+    UniversitiesModule,
     ProfessorsModule,
     RatingsModule,
     SeedModule,
