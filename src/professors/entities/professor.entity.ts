@@ -1,12 +1,12 @@
 import {
-    Column,
-    CreateDateColumn,
-    Entity,
-    JoinColumn,
-    ManyToOne,
-    OneToMany,
-    PrimaryGeneratedColumn,
-    UpdateDateColumn,
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Rating } from '../../ratings/entities/rating.entity';
 import { University } from '../../universities/entities/university.entity';
@@ -18,6 +18,9 @@ export class Professor {
 
   @Column()
   name!: string;
+
+  @Column()
+  department!: string;
 
   @Column({ name: 'university_id' })
   universityId!: string;
