@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { CommonModule } from './common/common.module';
 import { ProfessorsModule } from './professors/professors.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { SeedModule } from './seed/seed.module';
+import { TestController } from './test.controller';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -31,5 +33,6 @@ import { UsersModule } from './users/users.module';
     RatingsModule,
     SeedModule,
   ],
+  controllers: [AppController, TestController],
 })
 export class AppModule {}
