@@ -12,8 +12,8 @@ export class SeedController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ 
-    summary: 'Ejecutar seed de la base de datos',
-    description: 'Crea datos masivos de prueba: 100 usuarios, 80 universidades, 150 profesores, 400 comentarios con Faker.js'
+    summary: 'Execute database seed',
+    description: 'Creates massive test data: 100 users, 80 universities, 150 professors, 400 comments using Faker.js'
   })
   @ApiResponse({ 
     status: 201, 
@@ -65,8 +65,8 @@ export class SeedController {
   @Delete()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
-    summary: 'Ejecutar unseed de la base de datos',
-    description: 'Elimina todos los datos creados por el seed: comentarios, profesores, universidades y estudiantes. Mantiene el admin.'
+    summary: 'Execute database unseed',
+    description: 'Removes all data created by seed: comments, professors, universities and students. Keeps admin user.'
   })
   @ApiResponse({ 
     status: 200, 
