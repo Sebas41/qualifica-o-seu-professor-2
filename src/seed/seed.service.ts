@@ -1,13 +1,13 @@
+import { faker } from '@faker-js/faker';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { faker } from '@faker-js/faker';
 import * as bcrypt from 'bcrypt';
-import { User } from '../users/entities/user.entity';
-import { University } from '../universities/entities/university.entity';
-import { Professor } from '../professors/entities/professor.entity';
-import { Rating } from '../ratings/entities/rating.entity';
+import { Repository } from 'typeorm';
+import { Comment } from '../comments/entities/comment.entity';
 import { UserRole } from '../common/enums/role.enum';
+import { Professor } from '../professors/entities/professor.entity';
+import { University } from '../universities/entities/university.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class SeedService {
@@ -20,15 +20,15 @@ export class SeedService {
     private readonly universityRepository: Repository<University>,
     @InjectRepository(Professor)
     private readonly professorRepository: Repository<Professor>,
-    @InjectRepository(Rating)
-    private readonly ratingRepository: Repository<Rating>,
+    @InjectRepository(Comment)
+    private readonly commentRepository: Repository<Comment>,
   ) {}
 
   private pick<T>(arr: T[]): T {
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
-  async executeSeed(): Promise<void> {
+  async executeSeed(): Promise<{ message: string; data: any }> {
     this.logger.log('🌱 Iniciando seed de la base de datos...');
 
     try {
@@ -36,7 +36,10 @@ export class SeedService {
       const existingUsers = await this.userRepository.count();
       if (existingUsers > 0) {
         this.logger.log('La base de datos ya contiene datos. Omitiendo seed.');
-        return;
+        return {
+          message: 'La base de datos ya contiene datos. Omitiendo seed.',
+          data: { existingUsers }
+        };
       }
 
       // Configuración de cantidades
@@ -44,7 +47,7 @@ export class SeedService {
         users: 100,
         universities: 80,
         professors: 150,
-        ratings: 400,
+        comments: 400,
       };
 
       // 1. Crear usuarios (incluyendo admin)
@@ -103,31 +106,35 @@ export class SeedService {
       const professors = await this.professorRepository.save(professorsData);
       this.logger.log(`${professors.length} profesores creados`);
 
-      // 4. Crear calificaciones (ratings)
-      this.logger.log('Generando calificaciones...');
-      const ratingsData: Partial<Rating>[] = [];
+      // 4. Crear comentarios (unificados con ratings)
+      this.logger.log('Generando comentarios...');
+      const commentsData: Partial<Comment>[] = [];
       const studentUsers = users.filter(u => u.role === UserRole.STUDENT);
       
-      for (let i = 0; i < counts.ratings; i++) {
+      for (let i = 0; i < counts.comments; i++) {
         const student = this.pick(studentUsers);
         const professor = this.pick(professors);
-        ratingsData.push({
-          rating: faker.number.int({ min: 1, max: 5 }),
-          comment: faker.lorem.sentences({ min: 1, max: 3 }),
+        
+        // 70% de probabilidad de tener rating, 30% solo comentario
+        const hasRating = Math.random() < 0.7;
+        
+        commentsData.push({
+          content: faker.lorem.sentences({ min: 1, max: 3 }),
+          rating: hasRating ? faker.number.int({ min: 1, max: 5 }) : undefined,
           professorId: professor.id,
           studentId: student.id,
         });
       }
 
-      const ratings = await this.ratingRepository.save(ratingsData);
-      this.logger.log(`${ratings.length} calificaciones creadas`);
+      const comments = await this.commentRepository.save(commentsData);
+      this.logger.log(`${comments.length} comentarios creados`);
 
       // Resumen final
-      const [totalUsers, totalUniversities, totalProfessors, totalRatings] = await Promise.all([
+      const [totalUsers, totalUniversities, totalProfessors, totalComments] = await Promise.all([
         this.userRepository.count(),
         this.universityRepository.count(),
         this.professorRepository.count(),
-        this.ratingRepository.count(),
+        this.commentRepository.count(),
       ]);
 
       this.logger.log('Seed completado exitosamente!');
@@ -135,7 +142,7 @@ export class SeedService {
       this.logger.log(`   - Usuarios: ${totalUsers}`);
       this.logger.log(`   - Universidades: ${totalUniversities}`);
       this.logger.log(`   - Profesores: ${totalProfessors}`);
-      this.logger.log(`   - Calificaciones: ${totalRatings}`);
+      this.logger.log(`   - Comentarios: ${totalComments}`);
       this.logger.log('');
       this.logger.log('Credenciales del administrador:');
       this.logger.log('   Email: admin@example.com');
@@ -144,8 +151,69 @@ export class SeedService {
       this.logger.log('Credenciales de usuarios normales:');
       this.logger.log('   Email: user0@example.com (hasta user99@example.com)');
       this.logger.log('   Password: password123');
+
+      return {
+        message: 'Seed ejecutado exitosamente',
+        data: {
+          admin: { id: users[0].id, email: 'admin@example.com' },
+          universities: totalUniversities,
+          professors: totalProfessors,
+          students: totalUsers - 1, // -1 por el admin
+          comments: totalComments,
+        },
+      };
     } catch (error) {
       this.logger.error('Error durante el seed:', error);
+      throw error;
+    }
+  }
+
+  async executeUnseed(): Promise<{ message: string }> {
+    this.logger.log('🗑️ Iniciando unseed de la base de datos...');
+
+    try {
+      // Contar registros antes de eliminar
+      const commentsCount = await this.commentRepository.count();
+      const professorsCount = await this.professorRepository.count();
+      const universitiesCount = await this.universityRepository.count();
+      const studentsCount = await this.userRepository.count({ where: { role: UserRole.STUDENT } });
+
+      this.logger.log(`Encontrados: ${commentsCount} comentarios, ${professorsCount} profesores, ${universitiesCount} universidades, ${studentsCount} estudiantes`);
+
+      // Si no hay datos, retornar éxito
+      if (commentsCount === 0 && professorsCount === 0 && universitiesCount === 0 && studentsCount === 0) {
+        this.logger.log('No hay datos para eliminar');
+        return { message: 'No hay datos para eliminar' };
+      }
+
+      // Eliminar comentarios primero (por las foreign keys)
+      if (commentsCount > 0) {
+        await this.commentRepository.query('DELETE FROM comments');
+        this.logger.log(`${commentsCount} comentarios eliminados`);
+      }
+
+      // Eliminar profesores
+      if (professorsCount > 0) {
+        await this.professorRepository.query('DELETE FROM professors');
+        this.logger.log(`${professorsCount} profesores eliminados`);
+      }
+
+      // Eliminar universidades
+      if (universitiesCount > 0) {
+        await this.universityRepository.query('DELETE FROM universities');
+        this.logger.log(`${universitiesCount} universidades eliminadas`);
+      }
+
+      // Eliminar estudiantes
+      if (studentsCount > 0) {
+        await this.userRepository.query('DELETE FROM users WHERE role = $1', [UserRole.STUDENT]);
+        this.logger.log(`${studentsCount} estudiantes eliminados`);
+      }
+
+      this.logger.log('Unseed completado exitosamente!');
+      return { message: 'Unseed ejecutado exitosamente' };
+    } catch (error) {
+      this.logger.error('Error durante el unseed:', error);
       throw error;
     }
   }

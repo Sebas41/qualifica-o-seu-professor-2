@@ -991,23 +991,23 @@
 			]
 		},
 		{
-			"name": "Ratings",
+			"name": "Comments",
 			"item": [
 				{
-					"name": "Create Rating",
+					"name": "Create Comment",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Calificación creada exitosamente\", function () {",
+									"pm.test(\"Comentario creado exitosamente\", function () {",
 									"    pm.response.to.have.status(201);",
 									"});",
 									"",
-									"pm.test(\"Calificación tiene ID\", function () {",
+									"pm.test(\"Comentario tiene ID\", function () {",
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(jsonData).to.have.property('id');",
-									"    pm.globals.set(\"ratingId\", jsonData.id);",
+									"    pm.globals.set(\"commentId\", jsonData.id);",
 									"});"
 								],
 								"type": "text/javascript",
@@ -1036,35 +1036,35 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"professor\": \"{{professorId}}\",\n    \"rating\": 5,\n    \"comment\": \"Excelente profesor, muy claro en sus explicaciones\"\n}"
+							"raw": "{\n    \"professor\": \"{{professorId}}\",\n    \"rating\": 5,\n    \"content\": \"Excelente profesor, muy claro en sus explicaciones\"\n}"
 						},
 						"url": {
-							"raw": "{{dominio}}/api/ratings",
+							"raw": "{{dominio}}/api/comments",
 							"host": [
 								"{{dominio}}"
 							],
 							"path": [
 								"api",
-								"ratings"
+								"comments"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Get All Ratings",
+					"name": "Get All Comments",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Calificaciones obtenidas exitosamente\", function () {",
+									"pm.test(\"Comentarios obtenidos exitosamente\", function () {",
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
 									"pm.test(\"Response es array\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.be.an('array');",
+									"    pm.expect(jsonData.data).to.be.an('array');",
 									"});"
 								],
 								"type": "text/javascript",
@@ -1080,33 +1080,33 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{dominio}}/api/ratings",
+							"raw": "{{dominio}}/api/comments",
 							"host": [
 								"{{dominio}}"
 							],
 							"path": [
 								"api",
-								"ratings"
+								"comments"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Get Rating By ID",
+					"name": "Get Comment By ID",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Calificación obtenida exitosamente\", function () {",
+									"pm.test(\"Comentario obtenido exitosamente\", function () {",
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Calificación tiene propiedades correctas\", function () {",
+									"pm.test(\"Comentario tiene propiedades correctas\", function () {",
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(jsonData).to.have.property('rating');",
-									"    pm.expect(jsonData).to.have.property('comment');",
+									"    pm.expect(jsonData).to.have.property('content');",
 									"});"
 								],
 								"type": "text/javascript",
@@ -1122,27 +1122,27 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{dominio}}/api/ratings/{{ratingId}}",
+							"raw": "{{dominio}}/api/comments/{{commentId}}",
 							"host": [
 								"{{dominio}}"
 							],
 							"path": [
 								"api",
-								"ratings",
-								"{{ratingId}}"
+								"comments",
+								"{{commentId}}"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Update Rating",
+					"name": "Update Comment",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Calificación actualizada exitosamente\", function () {",
+									"pm.test(\"Comentario actualizado exitosamente\", function () {",
 									"    pm.response.to.have.status(200);",
 									"});"
 								],
@@ -1172,17 +1172,17 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"rating\": 4,\n    \"comment\": \"Comentario actualizado - Muy buen profesor\"\n}"
+							"raw": "{\n    \"rating\": 4,\n    \"content\": \"Comentario actualizado - Muy buen profesor\"\n}"
 						},
 						"url": {
-							"raw": "{{dominio}}/api/ratings/{{ratingId}}",
+							"raw": "{{dominio}}/api/comments/{{commentId}}",
 							"host": [
 								"{{dominio}}"
 							],
 							"path": [
 								"api",
-								"ratings",
-								"{{ratingId}}"
+								"comments",
+								"{{commentId}}"
 							]
 						}
 					},
