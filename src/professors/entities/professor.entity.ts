@@ -1,14 +1,14 @@
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
-import { Rating } from '../../ratings/entities/rating.entity';
+import { Comment } from '../../comments/entities/comment.entity';
 import { University } from '../../universities/entities/university.entity';
 
 @Entity({ name: 'professors' })
@@ -29,8 +29,8 @@ export class Professor {
   @JoinColumn({ name: 'university_id' })
   university!: University;
 
-  @OneToMany(() => Rating, (rating) => rating.professor)
-  ratings!: Rating[];
+  @OneToMany(() => Comment, (comment) => comment.professor)
+  comments!: Comment[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

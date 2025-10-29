@@ -9,8 +9,8 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Comment } from '../../comments/entities/comment.entity';
 import { UserRole } from '../../common/enums/role.enum';
-import { Rating } from '../../ratings/entities/rating.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -29,8 +29,8 @@ export class User {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.STUDENT })
   role!: UserRole;
 
-  @OneToMany(() => Rating, (rating) => rating.student)
-  ratings!: Rating[];
+  @OneToMany(() => Comment, (comment) => comment.student)
+  comments!: Comment[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
