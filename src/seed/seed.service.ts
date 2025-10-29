@@ -6,7 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
 import { University } from '../universities/entities/university.entity';
 import { Professor } from '../professors/entities/professor.entity';
-import { Rating } from '../ratings/entities/rating.entity';
+import { Comment } from '../comments/entities/comment.entity';
 import { UserRole } from '../common/enums/role.enum';
 
 @Injectable()
@@ -20,8 +20,8 @@ export class SeedService {
     private readonly universityRepository: Repository<University>,
     @InjectRepository(Professor)
     private readonly professorRepository: Repository<Professor>,
-    @InjectRepository(Rating)
-    private readonly ratingRepository: Repository<Rating>,
+    @InjectRepository(Comment)
+    private readonly commentRepository: Repository<Comment>,
   ) {}
 
   private pick<T>(arr: T[]): T {
@@ -44,7 +44,7 @@ export class SeedService {
         users: 100,
         universities: 80,
         professors: 150,
-        ratings: 400,
+        comments: 400,
       };
 
       // 1. Crear usuarios (incluyendo admin)
@@ -103,31 +103,31 @@ export class SeedService {
       const professors = await this.professorRepository.save(professorsData);
       this.logger.log(`${professors.length} profesores creados`);
 
-      // 4. Crear calificaciones (ratings)
-      this.logger.log('Generando calificaciones...');
-      const ratingsData: Partial<Rating>[] = [];
+      // 4. Crear comentarios
+      this.logger.log('Generando comentarios...');
+      const commentsData: Partial<Comment>[] = [];
       const studentUsers = users.filter(u => u.role === UserRole.STUDENT);
       
-      for (let i = 0; i < counts.ratings; i++) {
+      for (let i = 0; i < counts.comments; i++) {
         const student = this.pick(studentUsers);
         const professor = this.pick(professors);
-        ratingsData.push({
+        commentsData.push({
+          content: faker.lorem.sentences({ min: 1, max: 3 }),
           rating: faker.number.int({ min: 1, max: 5 }),
-          comment: faker.lorem.sentences({ min: 1, max: 3 }),
           professorId: professor.id,
           studentId: student.id,
         });
       }
 
-      const ratings = await this.ratingRepository.save(ratingsData);
-      this.logger.log(`${ratings.length} calificaciones creadas`);
+      const comments = await this.commentRepository.save(commentsData);
+      this.logger.log(`${comments.length} comentarios creados`);
 
       // Resumen final
-      const [totalUsers, totalUniversities, totalProfessors, totalRatings] = await Promise.all([
+      const [totalUsers, totalUniversities, totalProfessors, totalComments] = await Promise.all([
         this.userRepository.count(),
         this.universityRepository.count(),
         this.professorRepository.count(),
-        this.ratingRepository.count(),
+        this.commentRepository.count(),
       ]);
 
       this.logger.log('Seed completado exitosamente!');
@@ -135,7 +135,7 @@ export class SeedService {
       this.logger.log(`   - Usuarios: ${totalUsers}`);
       this.logger.log(`   - Universidades: ${totalUniversities}`);
       this.logger.log(`   - Profesores: ${totalProfessors}`);
-      this.logger.log(`   - Calificaciones: ${totalRatings}`);
+      this.logger.log(`   - Comentarios: ${totalComments}`);
       this.logger.log('');
       this.logger.log('Credenciales del administrador:');
       this.logger.log('   Email: admin@example.com');

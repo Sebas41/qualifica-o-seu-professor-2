@@ -5,11 +5,11 @@ import { SeedService } from './seed.service';
 import { User } from '../users/entities/user.entity';
 import { University } from '../universities/entities/university.entity';
 import { Professor } from '../professors/entities/professor.entity';
-import { Rating } from '../ratings/entities/rating.entity';
+import { Comment } from '../comments/entities/comment.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, University, Professor, Rating]),
+    TypeOrmModule.forFeature([User, University, Professor, Comment]),
   ],
   controllers: [SeedController],
   providers: [SeedService],
