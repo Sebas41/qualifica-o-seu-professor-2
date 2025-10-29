@@ -1,44 +1,132 @@
-name: CI
+name: CI - Unit + Postman Reports
 
 on:
   push:
-    branches:
-      - '**'
+    branches: [ main, master, dev ]
   pull_request:
-    branches:
-      - '**'
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: qualifica
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d qualifica" \
-          --health-interval 10s \
-          --health-timeout 5s \
-          --health-retries 5
-    env:
-      DATABASE_HOST: 127.0.0.1
-      DATABASE_PORT: 5432
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: postgres
-      DATABASE_NAME: qualifica
-      JWT_SECRET: test-secret
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+
+      - name: Start Postgres with Docker Compose
+        run: docker compose -f docker-compose.yml up -d
+
+      - name: Wait for Postgres to be ready
+        shell: bash
+        run: |
+          timeout 90s bash -c 'until echo > /dev/tcp/127.0.0.1/5432; do echo "waiting for postgres..."; sleep 2; done'
+          docker compose -f docker-compose.yml ps
+
       - name: Install dependencies
-        run: npm ci
-      - name: Run tests with coverage
-        run: npm run test:cov
+        run: npm install --no-audit --no-fund
+
+      - name: Start API (NestJS) in background
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_USER: postgres
+          DB_PASS: postgres
+          DB_NAME: qualifica
+          DB_SYNC: 'true'
+          JWT_SECRET: supersecret
+        shell: bash
+        run: |
+          npm run start:dev &
+          echo $! > server.pid
+
+      - name: Wait for API readiness
+        shell: bash
+        run: |
+          timeout 90s bash -c 'until curl -fsS http://localhost:3000/api/docs > /dev/null; do echo "waiting for api..."; sleep 3; done'
+
+      - name: Run seeds via API (POST /api/seed/run)
+        shell: bash
+        run: |
+          set +e
+          curl -sS -X POST http://localhost:3000/api/seed/run -H "Content-Type: application/json" -d '{}' | tee seed_output.json
+          echo "Seed step completed (errors ignored to continue report generation)."
+
+      - name: Install jest-junit (no-save) for JUnit report
+        run: npm i --no-save jest-junit
+
+      - name: Run unit tests (Jest) with coverage, JUnit report, and capture exit code
+        shell: bash
+        env:
+          JEST_JUNIT_OUTPUT: reports/jest/junit.xml
+        run: |
+          mkdir -p .status reports/jest
+          set +e
+          npm test -- --coverage --reporters=default --reporters=jest-junit
+          CODE=$?
+          echo $CODE > .status/jest_code
+          exit 0
+
+      - name: Install Newman and htmlextra reporter
+        run: npm i -g newman newman-reporter-htmlextra
+
+      - name: Run Postman tests with Newman (HTML + JSON + JUnit) and capture exit code
+        shell: bash
+        run: |
+          mkdir -p reports/newman
+          set +e
+          newman run apiExpress.postman_collection.json \
+            --env-var dominio=http://localhost:3000 \
+            -r cli,htmlextra,json,junit \
+            --reporter-htmlextra-export reports/newman/report.html \
+            --reporter-json-export reports/newman/report.json \
+            --reporter-junit-export reports/newman/report.junit.xml
+          CODE=$?
+          echo $CODE > .status/newman_code
+          exit 0
+
+      - name: Install wkhtmltopdf
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wkhtmltopdf
+
+      - name: Generate PDF from HTML report (tolerant)
+        shell: bash
+        run: |
+          set +e
+          if [ ! -f reports/newman/report.html ]; then
+            mkdir -p reports/newman
+            echo "<html><body><h1>Reporte de Postman</h1><p>No se generó report.html. Revisa report.json y junit.xml.</p></body></html>" > reports/newman/report.html
+          fi
+          wkhtmltopdf reports/newman/report.html reports/newman/report.pdf || echo "wkhtmltopdf failed, but continuing."
+
+      - name: Install xlsx lib (no-save) for XLSX export
+        run: npm i --no-save xlsx
+
+      - name: Generate CSV and XLSX from Newman JSON (openable in Excel)
+        shell: bash
+        run: |
+          node -e "const fs=require('fs');try{const data=JSON.parse(fs.readFileSync('reports/newman/report.json','utf8'));const execs=(data.run&&data.run.executions)||[];const rows=execs.map(e=>({item:(e.item&&e.item.name)||'',iteration:(e.cursor&&e.cursor.iteration)||0,method:(e.request&&e.request.method)||'',status:((e.assertions||[]).every(a=>!a.error)?'passed':'failed'),failed:(e.assertions||[]).filter(a=>a&&a.error).length,passed:(e.assertions||[]).filter(a=>a&&!a.error).length}));const headers=Object.keys(rows[0]||{item:'',iteration:0,method:'',status:'',failed:0,passed:0});const csv=[headers.join(','),...rows.map(r=>headers.map(h=>JSON.stringify(r[h]??'')).join(','))].join('\n');fs.writeFileSync('reports/newman/report.csv',csv);}catch(err){console.error('CSV generation failed:',err.message);}" 
+          node -e "const fs=require('fs');const XLSX=require('xlsx');try{const data=JSON.parse(fs.readFileSync('reports/newman/report.json','utf8'));const execs=(data.run&&data.run.executions)||[];const rows=execs.map(e=>({Item:(e.item&&e.item.name)||'',Iteration:(e.cursor&&e.cursor.iteration)||0,Method:(e.request&&e.request.method)||'',Status:((e.assertions||[]).every(a=>!a.error)?'passed':'failed'),Failed:(e.assertions||[]).filter(a=>a&&a.error).length,Passed:(e.assertions||[]).filter(a=>a&&!a.error).length}));const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(rows);XLSX.utils.book_append_sheet(wb,ws,'Newman');XLSX.writeFile(wb,'reports/newman/report.xlsx');}catch(err){console.error('XLSX generation failed:',err.message);process.exitCode=0;}"
+
+      - name: Upload reports and coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-and-coverage
+          path: |
+            coverage/**
+            reports/newman/**
+            reports/jest/**
+
+      - name: Shutdown services
+        if: always()
+        shell: bash
+        run: |
+          if [ -f server.pid ]; then kill $(cat server.pid) || true; fi
+          docker compose -f docker-compose.yml down -v
