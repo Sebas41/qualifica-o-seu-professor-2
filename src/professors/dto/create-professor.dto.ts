@@ -12,7 +12,7 @@ export class CreateProfessorDto {
   name!: string;
 
   @ApiProperty({ 
-    example: 'Ciencias de la Computación',
+    example: 'Computer Science',
     minLength: 2,
     maxLength: 100
   })
