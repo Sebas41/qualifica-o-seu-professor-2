@@ -80,7 +80,7 @@ jobs:
         run: |
           mkdir -p reports/newman
           set +e
-          newman run apiExpress.postman_collection.json \
+          newman run apiNest.postman_collection.json \
             --env-var dominio=http://localhost:3000 \
             -r cli,htmlextra,json,junit \
             --reporter-htmlextra-export reports/newman/report.html \
