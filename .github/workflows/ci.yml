@@ -84,10 +84,22 @@ jobs:
             --env-var dominio=http://localhost:3000 \
             -r cli,htmlextra,json,junit \
             --reporter-htmlextra-export reports/newman/report.html \
+            --reporter-htmlextra-skipHeaders "User-Agent" \
+            --reporter-htmlextra-omitRequestBodies \
+            --reporter-htmlextra-omitResponseBodies \
             --reporter-json-export reports/newman/report.json \
-            --reporter-junit-export reports/newman/report.junit.xml
+            --reporter-junit-export reports/newman/report.junit.xml \
+            --color off
           CODE=$?
           echo $CODE > .status/newman_code
+          
+          # Verify HTML report was created
+          if [ -f reports/newman/report.html ]; then
+            echo "Newman HTML report generated successfully"
+            ls -lh reports/newman/report.html
+          else
+            echo "Newman HTML report NOT generated - check Newman output above"
+          fi
           exit 0
 
       - name: Install wkhtmltopdf
