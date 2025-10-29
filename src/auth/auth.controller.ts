@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { Public } from '../common/decorators/public.decorator';
@@ -27,10 +27,11 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
     const { accessToken, user } = await this.authService.login(loginDto);
     const { password, ...rest } = user;
-    return { accessToken, user: rest };
+    return { token: accessToken, user: rest };
   }
 
   @Get('me')

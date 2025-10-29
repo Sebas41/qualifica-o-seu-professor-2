@@ -30,6 +30,7 @@
     "typeorm": "^0.3.27"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.1.0",
     "@nestjs/testing": "^11.0.8",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.4",

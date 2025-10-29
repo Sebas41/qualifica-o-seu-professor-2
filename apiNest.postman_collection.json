@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "5ef3bfa4-6701-4b3e-84d6-d69f155bd8db",
-		"name": "apiExpress",
+		"name": "apiNest",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "44853341"
 	},
@@ -69,8 +69,8 @@
 									"\r",
 									"pm.test(\"Usuario creado correctamente\", function () {\r",
 									"    var jsonData = pm.response.json();\r",
-									"    pm.expect(jsonData).to.have.property('id');\r",
-									"    pm.expect(jsonData.email).to.eql(\"nuevo@example.com\");\r",
+									"    pm.expect(jsonData.user).to.have.property('id');\r",
+									"    pm.expect(jsonData.user.email).to.eql(\"nuevo1@gmail.com\");\r",
 									"});"
 								],
 								"type": "text/javascript",
@@ -94,7 +94,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\": \"Nuevo Usuario\",\r\n    \"email\": \"nuevo1@gmail.com\",\r\n    \"password\": \"password123\",\r\n    \"role\": \"user\"\r\n}",
+							"raw": "{\r\n    \"name\": \"Nuevo Usuario\",\r\n    \"email\": \"nuevo1@gmail.com\",\r\n    \"password\": \"password123\",\r\n    \"role\": \"student\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -172,7 +172,7 @@
 							"script": {
 								"exec": [
 									"pm.test(\"Registro fallido - sin permisos\", function () {\r",
-									"    pm.response.to.have.status(403);\r",
+									"    pm.response.to.have.status(401);\r",
 									"});"
 								],
 								"type": "text/javascript",
@@ -196,7 +196,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\": \"Nuevo Usuario\",\r\n    \"email\": \"nuevo@example.com\",\r\n    \"password\": \"password123\",\r\n    \"role\": \"user\"\r\n}",
+							"raw": "{\r\n    \"name\": \"Nuevo Usuario\",\r\n    \"email\": \"nuevo@example.com\",\r\n    \"password\": \"password123\",\r\n    \"role\": \"admin\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -225,12 +225,12 @@
 							"script": {
 								"exec": [
 									"pm.test(\"Login fallido\", function () {\r",
-									"    pm.response.to.have.status(400);\r",
+									"    pm.response.to.have.status(401);\r",
 									"});\r",
 									"\r",
 									"pm.test(\"Mensaje de error correcto\", function () {\r",
 									"    var jsonData = pm.response.json();\r",
-									"    pm.expect(jsonData.message).to.include(\"Invalid credentials\");\r",
+									"    pm.expect(jsonData.message).to.include(\"Invalid\");\r",
 									"});"
 								],
 								"type": "text/javascript",
@@ -273,12 +273,12 @@
 							"script": {
 								"exec": [
 									"pm.test(\"Registro fallido - sin token\", function () {\r",
-									"    pm.response.to.have.status(401);\r",
+									"    pm.response.to.have.status(400);\r",
 									"});\r",
 									"\r",
 									"pm.test(\"Mensaje de error correcto\", function () {\r",
 									"    var jsonData = pm.response.json();\r",
-									"    pm.expect(jsonData.message).to.include(\"Missing token\");\r",
+									"    pm.expect(jsonData.message).to.be.an('array');\r",
 									"});"
 								],
 								"type": "text/javascript",
@@ -292,7 +292,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\": \"Nuevo Usuario\",\r\n    \"email\": \"nuevo@example.com\",\r\n    \"password\": \"password123\",\r\n    \"role\": \"user\"\r\n}",
+							"raw": "{\r\n    \"email\": \"nuevo@example.com\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -326,7 +326,7 @@
 									"\r",
 									"pm.test(\"Response contiene información del usuario\", function () {\r",
 									"    var jsonData = pm.response.json();\r",
-									"    pm.expect(jsonData).to.have.property('sub');\r",
+									"    pm.expect(jsonData).to.have.property('id');\r",
 									"    pm.expect(jsonData).to.have.property('role');\r",
 									"});"
 								],
@@ -376,7 +376,7 @@
 									"\r",
 									"pm.test(\"Mensaje de error correcto\", function () {\r",
 									"    var jsonData = pm.response.json();\r",
-									"    pm.expect(jsonData.message).to.include(\"Missing token\");\r",
+									"    pm.expect(jsonData.message).to.include(\"Unauthorized\");\r",
 									"});"
 								],
 								"type": "text/javascript",
@@ -449,8 +449,8 @@
 									"",
 									"pm.test(\"Universidad tiene ID\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('_id');",
-									"    pm.globals.set(\"universityId\", jsonData._id);",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.globals.set(\"universityId\", jsonData.id);",
 									"});"
 								],
 								"type": "text/javascript",
@@ -518,14 +518,7 @@
 					],
 					"request": {
 						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{userToken}}",
-									"type": "string"
-								}
-							]
+							"type": "noauth"
 						},
 						"method": "GET",
 						"header": [],
@@ -568,14 +561,7 @@
 					],
 					"request": {
 						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{userToken}}",
-									"type": "string"
-								}
-							]
+							"type": "noauth"
 						},
 						"method": "GET",
 						"header": [],
@@ -621,7 +607,7 @@
 								}
 							]
 						},
-						"method": "PUT",
+						"method": "PATCH",
 						"header": [
 							{
 								"key": "Content-Type",
@@ -664,8 +650,8 @@
 									"",
 									"pm.test(\"Profesor tiene ID\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('_id');",
-									"    pm.globals.set(\"professorId\", jsonData._id);",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.globals.set(\"professorId\", jsonData.id);",
 									"});"
 								],
 								"type": "text/javascript",
@@ -733,14 +719,7 @@
 					],
 					"request": {
 						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{userToken}}",
-									"type": "string"
-								}
-							]
+							"type": "noauth"
 						},
 						"method": "GET",
 						"header": [],
@@ -782,14 +761,7 @@
 					],
 					"request": {
 						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{userToken}}",
-									"type": "string"
-								}
-							]
+							"type": "noauth"
 						},
 						"method": "GET",
 						"header": [],
@@ -835,7 +807,7 @@
 								}
 							]
 						},
-						"method": "PUT",
+						"method": "PATCH",
 						"header": [
 							{
 								"key": "Content-Type",
@@ -878,10 +850,9 @@
 									"",
 									"pm.test(\"Response tiene datos paginados\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('data');",
-									"    pm.expect(jsonData.data).to.be.an('array');",
-									"    if (jsonData.data.length > 0) {",
-									"        pm.globals.set(\"userId\", jsonData.data[0]._id);",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    if (jsonData.length > 0) {",
+									"        pm.globals.set(\"userId\", jsonData[0].id);",
 									"    }",
 									"});"
 								],
@@ -978,7 +949,7 @@
 									"",
 									"pm.test(\"Usuario tiene propiedades correctas\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('_id');",
+									"    pm.expect(jsonData).to.have.property('id');",
 									"    pm.expect(jsonData).to.have.property('name');",
 									"    pm.expect(jsonData).to.have.property('email');",
 									"    pm.expect(jsonData).to.have.property('role');",
@@ -1020,23 +991,23 @@
 			]
 		},
 		{
-			"name": "Comments",
+			"name": "Ratings",
 			"item": [
 				{
-					"name": "Create Comment",
+					"name": "Create Rating",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Comentario creado exitosamente\", function () {",
+									"pm.test(\"Calificación creada exitosamente\", function () {",
 									"    pm.response.to.have.status(201);",
 									"});",
 									"",
-									"pm.test(\"Comentario tiene ID\", function () {",
+									"pm.test(\"Calificación tiene ID\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('_id');",
-									"    pm.globals.set(\"commentId\", jsonData._id);",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.globals.set(\"ratingId\", jsonData.id);",
 									"});"
 								],
 								"type": "text/javascript",
@@ -1065,39 +1036,35 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"professor\": \"{{professorId}}\",\n    \"content\": \"Excelente profesor, muy claro en sus explicaciones\"\n}"
+							"raw": "{\n    \"professor\": \"{{professorId}}\",\n    \"rating\": 5,\n    \"comment\": \"Excelente profesor, muy claro en sus explicaciones\"\n}"
 						},
 						"url": {
-							"raw": "{{dominio}}/api/comments",
+							"raw": "{{dominio}}/api/ratings",
 							"host": [
 								"{{dominio}}"
 							],
 							"path": [
 								"api",
-								"comments"
+								"ratings"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Get All Comments",
+					"name": "Get All Ratings",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Comentarios obtenidos exitosamente\", function () {",
+									"pm.test(\"Calificaciones obtenidas exitosamente\", function () {",
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Response tiene estructura paginada\", function () {",
+									"pm.test(\"Response es array\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('data');",
-									"    pm.expect(jsonData.data).to.be.an('array');",
-									"    pm.expect(jsonData).to.have.property('page');",
-									"    pm.expect(jsonData).to.have.property('limit');",
-									"    pm.expect(jsonData).to.have.property('total');",
+									"    pm.expect(jsonData).to.be.an('array');",
 									"});"
 								],
 								"type": "text/javascript",
@@ -1108,46 +1075,38 @@
 					],
 					"request": {
 						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{userToken}}",
-									"type": "string"
-								}
-							]
+							"type": "noauth"
 						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{dominio}}/api/comments",
+							"raw": "{{dominio}}/api/ratings",
 							"host": [
 								"{{dominio}}"
 							],
 							"path": [
 								"api",
-								"comments"
+								"ratings"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Get Comment By ID",
+					"name": "Get Rating By ID",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Comentario obtenido exitosamente\", function () {",
+									"pm.test(\"Calificación obtenida exitosamente\", function () {",
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Comentario tiene propiedades correctas\", function () {",
+									"pm.test(\"Calificación tiene propiedades correctas\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('content');",
-									"    pm.expect(jsonData).to.have.property('user');",
-									"    pm.expect(jsonData).to.have.property('professor');",
+									"    pm.expect(jsonData).to.have.property('rating');",
+									"    pm.expect(jsonData).to.have.property('comment');",
 									"});"
 								],
 								"type": "text/javascript",
@@ -1158,39 +1117,32 @@
 					],
 					"request": {
 						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{userToken}}",
-									"type": "string"
-								}
-							]
+							"type": "noauth"
 						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{dominio}}/api/comments/{{commentId}}",
+							"raw": "{{dominio}}/api/ratings/{{ratingId}}",
 							"host": [
 								"{{dominio}}"
 							],
 							"path": [
 								"api",
-								"comments",
-								"{{commentId}}"
+								"ratings",
+								"{{ratingId}}"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Update Comment",
+					"name": "Update Rating",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Comentario actualizado exitosamente\", function () {",
+									"pm.test(\"Calificación actualizada exitosamente\", function () {",
 									"    pm.response.to.have.status(200);",
 									"});"
 								],
@@ -1211,7 +1163,7 @@
 								}
 							]
 						},
-						"method": "PUT",
+						"method": "PATCH",
 						"header": [
 							{
 								"key": "Content-Type",
@@ -1220,17 +1172,17 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"content\": \"Comentario actualizado - Muy buen profesor\"\n}"
+							"raw": "{\n    \"rating\": 4,\n    \"comment\": \"Comentario actualizado - Muy buen profesor\"\n}"
 						},
 						"url": {
-							"raw": "{{dominio}}/api/comments/{{commentId}}",
+							"raw": "{{dominio}}/api/ratings/{{ratingId}}",
 							"host": [
 								"{{dominio}}"
 							],
 							"path": [
 								"api",
-								"comments",
-								"{{commentId}}"
+								"ratings",
+								"{{ratingId}}"
 							]
 						}
 					},
