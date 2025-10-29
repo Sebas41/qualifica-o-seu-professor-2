@@ -27,3 +27,4 @@ export class CreateProfessorDto {
   @IsUUID()
   university!: string;
 }
+

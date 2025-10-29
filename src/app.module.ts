@@ -3,9 +3,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
+import { CommentsModule } from './comments/comments.module';
 import { CommonModule } from './common/common.module';
 import { ProfessorsModule } from './professors/professors.module';
-import { RatingsModule } from './ratings/ratings.module';
 import { SeedModule } from './seed/seed.module';
 import { TestController } from './test.controller';
 import { UniversitiesModule } from './universities/universities.module';
@@ -32,7 +32,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     UniversitiesModule,
     ProfessorsModule,
-    RatingsModule,
+    CommentsModule,
     SeedModule,
   ],
   controllers: [AppController, TestController],
