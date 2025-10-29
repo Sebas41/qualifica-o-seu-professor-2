@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { Public } from '../common/decorators/public.decorator';
 import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
@@ -8,7 +8,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
-@ApiTags('auth')
+@ApiTags('Authentication')
 @ApiBearerAuth()
 @Controller('auth')
 export class AuthController {
@@ -44,7 +44,7 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Email already exists' })
   @ApiResponse({ status: 403, description: 'Only admins can create other admins' })
   async register(@Body() registerDto: RegisterDto, @Req() req: Request) {
-    // Si el usuario está autenticado, usar su información para validar roles
+    // If the user is authenticated, use their information to validate roles
     const currentUser = req.user as User | undefined;
     const { accessToken, user } = await this.authService.register(registerDto, currentUser);
     const { password, ...rest } = user;
@@ -56,7 +56,27 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
     summary: 'User login',
-    description: 'Authenticates a user and returns an access token'
+    description: 'Authenticates a user and returns an access token. Use this endpoint to obtain the token needed to access protected endpoints.'
+  })
+  @ApiBody({ 
+    type: LoginDto,
+    description: 'Login credentials',
+    examples: {
+      example1: {
+        summary: 'Student login',
+        value: {
+          email: 'student@example.com',
+          password: 'password123'
+        }
+      },
+      example2: {
+        summary: 'Admin login',
+        value: {
+          email: 'admin@example.com',
+          password: 'admin123'
+        }
+      }
+    }
   })
   @ApiResponse({ 
     status: 200, 
@@ -64,7 +84,11 @@ export class AuthController {
     schema: {
       type: 'object',
       properties: {
-        token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+        token: { 
+          type: 'string', 
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          description: 'JWT token that must be used in the Authorization header as Bearer token'
+        },
         user: {
           type: 'object',
           properties: {

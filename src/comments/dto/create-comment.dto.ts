@@ -3,7 +3,7 @@ import { IsInt, IsOptional, IsString, IsUUID, Length, Max, Min } from 'class-val
 
 export class CreateCommentDto {
   @ApiProperty({ 
-    example: 'Excelente profesor, muy claro en sus explicaciones',
+    example: 'Excellent professor, very clear in his explanations',
     minLength: 1,
     maxLength: 1000
   })
