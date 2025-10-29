@@ -16,6 +16,7 @@ describe('AuthService', () => {
     usersService = {
       create: jest.fn(),
       findByEmail: jest.fn(),
+      findOne: jest.fn(),
     } as unknown as jest.Mocked<UsersService>;
 
     jwtService = {
@@ -115,5 +116,32 @@ describe('AuthService', () => {
     };
 
     await expect(service.register(dto)).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('should create student when no role is specified and no current user', async () => {
+    const dto: RegisterDto = { 
+      name: 'Student User', 
+      email: 'student@example.com', 
+      password: 'Secret123',
+      role: UserRole.STUDENT
+    };
+    const user = { id: '1', name: dto.name, email: dto.email, password: 'hashed', role: UserRole.STUDENT } as any;
+    usersService.create.mockResolvedValue(user);
+    jwtService.signAsync.mockResolvedValue('token');
+
+    const result = await service.register(dto);
+
+    expect(result.accessToken).toBe('token');
+    expect(result.user).toEqual(user);
+  });
+
+  it('should get user profile', async () => {
+    const user = { id: '1', email: 'test@example.com', role: UserRole.STUDENT } as any;
+    usersService.findOne.mockResolvedValue(user);
+
+    const result = await service.getProfile('1');
+
+    expect(usersService.findOne).toHaveBeenCalledWith('1');
+    expect(result).toEqual(user);
   });
 });

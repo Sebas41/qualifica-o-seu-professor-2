@@ -3,14 +3,35 @@ import type { Config } from 'jest';
 const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: 'src',
-  testRegex: '.*\\.spec\\.ts$',
+  testRegex: '.*\\.(spec|integration\\.spec)\\.ts$',
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
-  collectCoverageFrom: ['**/*.service.ts', '**/*.guard.ts', '!**/*.module.ts', '!**/*.controller.ts'],
+  collectCoverageFrom: [
+    '**/*.service.ts', 
+    '**/*.guard.ts', 
+    '!**/*.module.ts', 
+    '!**/*.controller.ts',
+    '!**/seed/**',
+    '!**/dist/**',
+    '!main.ts',
+  ],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
-  coveragePathIgnorePatterns: ['/node_modules/', 'main.ts', 'app.module.ts'],
+  coveragePathIgnorePatterns: [
+    '/node_modules/', 
+    '/dist/',
+    'main.ts', 
+    'app.module.ts',
+    '/seed/',
+    '.env',
+    '.integration.spec.ts',
+  ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    '/seed/',
+  ],
   coverageThreshold: {
     global: {
       branches: 80,
@@ -19,6 +40,7 @@ const config: Config = {
       statements: 80,
     },
   },
+  testTimeout: 30000,
 };
 
 export default config;

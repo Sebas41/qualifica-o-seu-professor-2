@@ -34,7 +34,8 @@ describe('RolesGuard', () => {
   });
 
   it('should deny when user lacks role', () => {
-    (reflector.getAllAndOverride as jest.Mock).mockReturnValue([UserRole.ADMIN]);
+    (reflector.getAllAndOverride as jest.Mock).mockReturnValueOnce(false);
+    (reflector.getAllAndOverride as jest.Mock).mockReturnValueOnce([UserRole.ADMIN]);
     request.user = { role: UserRole.STUDENT };
 
     expect(guard.canActivate(context)).toBe(false);

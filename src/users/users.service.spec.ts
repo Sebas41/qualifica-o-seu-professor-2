@@ -29,7 +29,7 @@ describe('UsersService', () => {
     const dto: CreateUserDto = {
       email: 'Test@Example.com',
       password: 'Secret123',
-      fullName: 'Test User',
+      name: 'Test User',
       role: UserRole.ADMIN,
     };
 
@@ -51,6 +51,21 @@ describe('UsersService', () => {
       repository.findOne.mockResolvedValueOnce({ id: '1' } as User);
 
       await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return all users', async () => {
+      const users = [
+        { id: '1', email: 'user1@example.com' } as User,
+        { id: '2', email: 'user2@example.com' } as User,
+      ];
+      repository.find.mockResolvedValue(users);
+
+      const result = await service.findAll();
+
+      expect(repository.find).toHaveBeenCalled();
+      expect(result).toEqual(users);
     });
   });
 
