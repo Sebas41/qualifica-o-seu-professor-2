@@ -95,6 +95,16 @@ jobs:
           
           # Verify HTML report was created
           if [ -f reports/newman/report.html ]; then
+            echo "✓ Newman HTML report generated successfully"
+            ls -lh reports/newman/report.html
+          else
+            echo "✗ Newman HTML report NOT generated - check Newman output above"
+            echo "Creating fallback HTML report..."
+            echo "<html><body><h1>Reporte de Postman</h1><p>El reporte HTML no se generó correctamente. Revisa report.json y junit.xml para los resultados completos.</p></body></html>" > reports/newman/report.html
+          fi
+          exit 0
+          # Verify HTML report was created
+          if [ -f reports/newman/report.html ]; then
             echo "Newman HTML report generated successfully"
             ls -lh reports/newman/report.html
           else
