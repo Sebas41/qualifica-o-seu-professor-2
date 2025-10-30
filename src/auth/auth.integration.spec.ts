@@ -1,4 +1,5 @@
 import { ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -8,7 +9,8 @@ import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { ConfigModule } from '@nestjs/config';
+import { BlacklistedToken } from './entities/blacklisted-token.entity';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 describe('AuthController Integration Tests', () => {
   let authController: AuthController;
@@ -19,6 +21,14 @@ describe('AuthController Integration Tests', () => {
   beforeAll(async () => {
     // Mock del repositorio
     const mockUserRepository = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      remove: jest.fn(),
+    };
+
+    const mockBlacklistedTokenRepository = {
       findOne: jest.fn(),
       find: jest.fn(),
       create: jest.fn(),
@@ -38,9 +48,14 @@ describe('AuthController Integration Tests', () => {
       providers: [
         AuthService,
         UsersService,
+        JwtStrategy,
         {
           provide: getRepositoryToken(User),
           useValue: mockUserRepository,
+        },
+        {
+          provide: getRepositoryToken(BlacklistedToken),
+          useValue: mockBlacklistedTokenRepository,
         },
       ],
     }).compile();

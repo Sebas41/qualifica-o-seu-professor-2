@@ -1,16 +1,19 @@
 import { UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { Repository } from 'typeorm';
 import { UserRole } from '../common/enums/role.enum';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { BlacklistedToken } from './entities/blacklisted-token.entity';
 
 describe('AuthService', () => {
   let service: AuthService;
   let usersService: jest.Mocked<UsersService>;
-  let jwtService: { signAsync: jest.Mock }; 
+  let jwtService: { signAsync: jest.Mock; verifyAsync: jest.Mock }; 
   let configService: { get: jest.Mock };
+  let blacklistedTokenRepository: jest.Mocked<Repository<BlacklistedToken>>;
 
   beforeEach(() => {
     usersService = {
@@ -21,13 +24,29 @@ describe('AuthService', () => {
 
     jwtService = {
       signAsync: jest.fn(),
+      verifyAsync: jest.fn(),
     };
 
     configService = {
-      get: jest.fn().mockReturnValue('secret'),
+      get: jest.fn((key: string, defaultValue?: string) => {
+        if (key === 'JWT_SECRET') return 'secret';
+        if (key === 'JWT_EXPIRES_IN') return '1d';
+        return defaultValue || 'secret';
+      }),
     };
 
-    service = new AuthService(usersService, jwtService as any, configService as any);
+    blacklistedTokenRepository = {
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+    } as unknown as jest.Mocked<Repository<BlacklistedToken>>;
+
+    service = new AuthService(
+      usersService, 
+      jwtService as any, 
+      configService as any,
+      blacklistedTokenRepository
+    );
   });
 
   it('should register a user and return token', async () => {
@@ -143,5 +162,65 @@ describe('AuthService', () => {
 
     expect(usersService.findOne).toHaveBeenCalledWith('1');
     expect(result).toEqual(user);
+  });
+
+  it('should logout and blacklist token', async () => {
+    const token = 'valid-token';
+    const decoded = { 
+      sub: '1', 
+      email: 'test@example.com', 
+      role: UserRole.STUDENT,
+      jti: 'token-id-123',
+      exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
+    };
+
+    jwtService.verifyAsync.mockResolvedValue(decoded);
+    blacklistedTokenRepository.create.mockReturnValue({
+      jti: decoded.jti,
+      expiresAt: new Date(decoded.exp * 1000),
+      blacklistedAt: new Date(),
+    } as BlacklistedToken);
+    blacklistedTokenRepository.save.mockResolvedValue({
+      jti: decoded.jti,
+      expiresAt: new Date(decoded.exp * 1000),
+      blacklistedAt: new Date(),
+    } as BlacklistedToken);
+
+    const result = await service.logout(token);
+
+    expect(jwtService.verifyAsync).toHaveBeenCalledWith(token, { secret: 'secret' });
+    expect(blacklistedTokenRepository.create).toHaveBeenCalled();
+    expect(blacklistedTokenRepository.save).toHaveBeenCalled();
+    expect(result.message).toBe('Logout successful');
+    expect(result).toHaveProperty('timestamp');
+  });
+
+  it('should logout even if token verification fails', async () => {
+    const token = 'invalid-token';
+
+    jwtService.verifyAsync.mockRejectedValue(new Error('Invalid token'));
+
+    const result = await service.logout(token);
+
+    expect(result.message).toBe('Logout successful');
+    expect(result).toHaveProperty('timestamp');
+  });
+
+  it('should logout token without jti', async () => {
+    const token = 'token-without-jti';
+    const decoded = { 
+      sub: '1', 
+      email: 'test@example.com', 
+      role: UserRole.STUDENT,
+      exp: Math.floor(Date.now() / 1000) + 3600
+    };
+
+    jwtService.verifyAsync.mockResolvedValue(decoded);
+
+    const result = await service.logout(token);
+
+    expect(jwtService.verifyAsync).toHaveBeenCalled();
+    expect(blacklistedTokenRepository.create).not.toHaveBeenCalled();
+    expect(result.message).toBe('Logout successful');
   });
 });
