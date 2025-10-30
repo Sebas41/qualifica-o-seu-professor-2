@@ -16,16 +16,26 @@ import { UsersModule } from './users/users.module';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST', 'localhost'),
-        port: Number(configService.get('DB_PORT', 5432)),
-        username: configService.get('DB_USER', 'postgres'),
-        password: configService.get('DB_PASS', 'postgres'),
-        database: configService.get('DB_NAME', 'qualifica'),
-        autoLoadEntities: true,
-        synchronize: configService.get('DB_SYNC', 'false') === 'true',
-      }),
+      useFactory: (configService: ConfigService) => {
+        const sslMode = (configService.get<string>('DB_SSL_MODE', '') || '').toLowerCase();
+        const enableSsl = ['require', 'verify-full', 'verify-ca'].includes(sslMode);
+        const sslOptions = enableSsl
+          ? { rejectUnauthorized: sslMode === 'verify-full' }
+          : undefined;
+
+        return {
+          type: 'postgres',
+          host: configService.get('DB_HOST', 'localhost'),
+          port: Number(configService.get('DB_PORT', 5432)),
+          username: configService.get('DB_USERNAME', configService.get('DB_USER', 'postgres')),
+          password: configService.get('DB_PASSWORD', configService.get('DB_PASS', 'postgres')),
+          database: configService.get('DB_DATABASE', configService.get('DB_NAME', 'qualifica')),
+          ssl: enableSsl ? sslOptions : false,
+          extra: enableSsl ? { ssl: sslOptions } : undefined,
+          autoLoadEntities: true,
+          synchronize: configService.get('DB_SYNC', 'false') === 'true',
+        };
+      },
     }),
     CommonModule,
     UsersModule,
