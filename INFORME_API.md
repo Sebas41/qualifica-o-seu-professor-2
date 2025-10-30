@@ -493,6 +493,14 @@ TypeOrmModule.forRoot({
 
 ## 6. Endpoints de la API
 
+> **Nota importante sobre autenticación:** Los endpoints protegidos requieren autenticación mediante JWT. Para obtener el token, primero debes hacer login en `POST /api/auth/login` (o registrarte en `POST /api/auth/register`). El token se debe incluir en el header de todas las peticiones protegidas:
+>
+> ```
+> Authorization: Bearer <tu-token-jwt>
+> ```
+>
+> **En Swagger:** Usa el botón **"Authorize"** (🔓) en la esquina superior derecha para pegar tu token. Esto te permitirá probar todos los endpoints protegidos directamente desde la interfaz de Swagger.
+
 ### 6.1 Módulo de Autenticación
 
 #### **POST /api/auth/register**
@@ -1455,9 +1463,40 @@ describe('ProfessorsController', () => {
 
 ## Información Adicional
 
-**Documentación Swagger:** `http://localhost:3000/api/docs`  
+**Documentación Swagger (local):** http://localhost:3000/api/docs  
+**Documentación Swagger (desplegado):** https://qualifica-o-seu-professor-i7vjf.ondigitalocean.app/api/docs  
 **Repositorio:** [GitHub](https://github.com/Sebas41/qualifica-o-seu-professor-2)  
 **Versión de la API:** 1.0.0  
 **Licencia:** MIT
+
+---
+
+## Guía Visual de Autenticación en Swagger
+
+A continuación se muestran los pasos para autenticarse y usar endpoints protegidos en la interfaz de Swagger:
+
+### 1. Ir al apartado de autenticación
+
+![Ir a autenticación](imagenesInforme/swaggerIrAutenticacion.jpeg)
+
+### 2. Hacer login con tus credenciales
+
+![Login](imagenesInforme/swaggerLogin.jpeg)
+
+### 3. Copiar el token JWT de la respuesta
+
+![Token JWT](imagenesInforme/swaggerJWT.jpeg)
+
+![Copiar token](imagenesInforme/swaggerJWTParaCopiar.jpeg)
+
+### 4. Hacer clic en el botón "Authorize"
+
+![Menú Swagger](imagenesInforme/swaggerMenu.jpeg)
+
+### 5. Pegar el token en el campo de autorización
+
+![Pegar token](imagenesInforme/swaggerPegarElToken.jpeg)
+
+Una vez autorizado, podrás usar todos los endpoints protegidos desde la interfaz de Swagger sin necesidad de añadir manualmente el header en cada petición.
 
 ---
