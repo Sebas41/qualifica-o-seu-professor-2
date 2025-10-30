@@ -1,5 +1,5 @@
-import { Controller, Delete, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
 import { SeedService } from './seed.service';
 
@@ -13,11 +13,20 @@ export class SeedController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ 
     summary: 'Execute database seed',
-    description: 'Creates massive test data: 100 users, 80 universities, 150 professors, 400 comments using Faker.js'
+    description: 'Creates massive test data: 100 users, 80 universities, 150 professors, 400 comments using Faker.js. By default, overwrites existing data. Use force=false to skip if data exists.'
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        force: { type: 'boolean', example: true, description: 'Force seed even if data exists. This will delete existing data first. Default: true' }
+      }
+    },
+    required: false
   })
   @ApiResponse({ 
     status: 201, 
-    description: 'Seed ejecutado exitosamente',
+    description: 'Seed executed successfully',
     schema: {
       type: 'object',
       properties: {
@@ -43,7 +52,7 @@ export class SeedController {
   })
   @ApiResponse({ 
     status: 200, 
-    description: 'La base de datos ya contiene datos',
+    description: 'Database already contains data',
     schema: {
       type: 'object',
       properties: {
@@ -57,8 +66,10 @@ export class SeedController {
       }
     }
   })
-  async executeSeed() {
-    return this.seedService.executeSeed();
+  async executeSeed(@Body('force') force?: boolean) {
+    // Si force no se especifica (undefined), usar true por defecto
+    const shouldForce = force === undefined ? true : force === true;
+    return this.seedService.executeSeed(shouldForce);
   }
 
   @Public()
@@ -66,11 +77,11 @@ export class SeedController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
     summary: 'Execute database unseed',
-    description: 'Removes all data created by seed: comments, professors, universities and students. Keeps admin user.'
+    description: 'Removes ALL data from the database: comments, professors, universities and all users (including admin).'
   })
   @ApiResponse({ 
     status: 200, 
-    description: 'Unseed ejecutado exitosamente',
+    description: 'Unseed executed successfully',
     schema: {
       type: 'object',
       properties: {
@@ -78,7 +89,7 @@ export class SeedController {
       }
     }
   })
-  @ApiResponse({ status: 500, description: 'Error interno del servidor' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async executeUnseed() {
     return this.seedService.executeUnseed();
   }

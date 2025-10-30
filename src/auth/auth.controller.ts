@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { Public } from '../common/decorators/public.decorator';
@@ -134,5 +134,42 @@ export class AuthController {
     const user = await this.authService.getProfile((req.user as any).id);
     const { password, ...rest } = user;
     return rest;
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'User logout',
+    description: 'Logs out the currently authenticated user and invalidates the JWT token on the server side. After logout, the token cannot be used to access protected endpoints. The client should also remove the token from storage.'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Logout successful - Token has been invalidated',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { 
+          type: 'string', 
+          example: 'Logout successful' 
+        },
+        timestamp: { 
+          type: 'string', 
+          format: 'date-time', 
+          example: '2024-01-01T12:00:00.000Z' 
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+  async logout(@Req() req: Request) {
+    // Extract token from Authorization header
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    
+    if (!token) {
+      throw new UnauthorizedException('Token not found in request');
+    }
+
+    return this.authService.logout(token);
   }
 }

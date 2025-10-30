@@ -28,18 +28,24 @@ export class SeedService {
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
-  async executeSeed(): Promise<{ message: string; data: any }> {
+  async executeSeed(force: boolean = true): Promise<{ message: string; data: any }> {
     this.logger.log('🌱 Iniciando seed de la base de datos...');
 
     try {
-      // Verificar si ya existen datos
+      // Verificar si ya existen datos (a menos que se fuerce el seed)
       const existingUsers = await this.userRepository.count();
-      if (existingUsers > 0) {
+      if (existingUsers > 0 && !force) {
         this.logger.log('La base de datos ya contiene datos. Omitiendo seed.');
         return {
-          message: 'La base de datos ya contiene datos. Omitiendo seed.',
+          message: 'The database already contains data. .',
           data: { existingUsers }
         };
+      }
+
+      // Si force=true y hay datos, eliminarlos primero
+      if (existingUsers > 0 && force) {
+        this.logger.log('Eliminando datos existentes antes de crear nuevos...');
+        await this.executeUnseed();
       }
 
       // Configuración de cantidades
@@ -176,12 +182,12 @@ export class SeedService {
       const commentsCount = await this.commentRepository.count();
       const professorsCount = await this.professorRepository.count();
       const universitiesCount = await this.universityRepository.count();
-      const studentsCount = await this.userRepository.count({ where: { role: UserRole.STUDENT } });
+      const usersCount = await this.userRepository.count();
 
-      this.logger.log(`Encontrados: ${commentsCount} comentarios, ${professorsCount} profesores, ${universitiesCount} universidades, ${studentsCount} estudiantes`);
+      this.logger.log(`Encontrados: ${commentsCount} comentarios, ${professorsCount} profesores, ${universitiesCount} universidades, ${usersCount} usuarios`);
 
       // Si no hay datos, retornar éxito
-      if (commentsCount === 0 && professorsCount === 0 && universitiesCount === 0 && studentsCount === 0) {
+      if (commentsCount === 0 && professorsCount === 0 && universitiesCount === 0 && usersCount === 0) {
         this.logger.log('No hay datos para eliminar');
         return { message: 'No hay datos para eliminar' };
       }
@@ -204,10 +210,10 @@ export class SeedService {
         this.logger.log(`${universitiesCount} universidades eliminadas`);
       }
 
-      // Eliminar estudiantes
-      if (studentsCount > 0) {
-        await this.userRepository.query('DELETE FROM users WHERE role = $1', [UserRole.STUDENT]);
-        this.logger.log(`${studentsCount} estudiantes eliminados`);
+      // Eliminar todos los usuarios (incluyendo admin y estudiantes)
+      if (usersCount > 0) {
+        await this.userRepository.query('DELETE FROM users');
+        this.logger.log(`${usersCount} usuarios eliminados`);
       }
 
       this.logger.log('Unseed completado exitosamente!');
