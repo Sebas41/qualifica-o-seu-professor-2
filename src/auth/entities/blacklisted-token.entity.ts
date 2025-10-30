@@ -16,3 +16,4 @@ export class BlacklistedToken {
   @CreateDateColumn({ name: 'blacklisted_at' })
   blacklistedAt!: Date;
 }
+

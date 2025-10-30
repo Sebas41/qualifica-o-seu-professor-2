@@ -1,14 +1,16 @@
 import { Body, Controller, Delete, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Public } from '../common/decorators/public.decorator';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Roles } from '../common/decorators/roles.decorator';
+import { UserRole } from '../common/enums/role.enum';
 import { SeedService } from './seed.service';
 
 @ApiTags('Seed')
+@ApiBearerAuth()
 @Controller('seed')
 export class SeedController {
   constructor(private readonly seedService: SeedService) {}
 
-  @Public()
+  @Roles(UserRole.ADMIN)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ 
@@ -66,13 +68,15 @@ export class SeedController {
       }
     }
   })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   async executeSeed(@Body('force') force?: boolean) {
     // Si force no se especifica (undefined), usar true por defecto
     const shouldForce = force === undefined ? true : force === true;
     return this.seedService.executeSeed(shouldForce);
   }
 
-  @Public()
+  @Roles(UserRole.ADMIN)
   @Delete()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
@@ -89,6 +93,8 @@ export class SeedController {
       }
     }
   })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   async executeUnseed() {
     return this.seedService.executeUnseed();
