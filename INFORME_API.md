@@ -32,7 +32,7 @@ La API **Qualifica o Seu Professor** es una plataforma RESTful desarrollada con 
 - Gestión de universidades (CRUD completo)
 - Gestión de profesores (CRUD completo)
 - Sistema de calificaciones y comentarios
-- Cálculo de rating promedio por profesor
+- Cálculo de rating promedio por profesor{{commentId}}
 - Control de acceso basado en roles
 - Documentación automática con Swagger/OpenAPI
 

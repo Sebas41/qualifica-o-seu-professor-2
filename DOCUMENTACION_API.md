@@ -1091,3 +1091,5 @@ Authorization: Bearer {tu_token_aqui}
 6. **Timestamps**: Todas las entidades incluyen `createdAt` y `updatedAt` con formato ISO 8601.
 
 
+
+

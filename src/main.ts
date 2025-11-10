@@ -7,6 +7,14 @@ import { SeedService } from './seed/seed.service';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Configurar CORS
+  app.enableCors({
+    origin: ['http://localhost:3000', 'http://localhost:3002'], // Frontend URLs
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+  });
+
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
