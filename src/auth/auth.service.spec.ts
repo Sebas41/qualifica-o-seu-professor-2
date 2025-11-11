@@ -7,6 +7,8 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { BlacklistedToken } from './entities/blacklisted-token.entity';
+import { EmailService } from './email.service';
+import { MagicLink } from './entities/magic-link.entity';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -14,6 +16,8 @@ describe('AuthService', () => {
   let jwtService: { signAsync: jest.Mock; verifyAsync: jest.Mock }; 
   let configService: { get: jest.Mock };
   let blacklistedTokenRepository: jest.Mocked<Repository<BlacklistedToken>>;
+  let emailService: jest.Mocked<EmailService>;
+  let magicLinkRepository: jest.Mocked<Repository<MagicLink>>;
 
   beforeEach(() => {
     usersService = {
@@ -41,36 +45,61 @@ describe('AuthService', () => {
       save: jest.fn(),
     } as unknown as jest.Mocked<Repository<BlacklistedToken>>;
 
+    emailService = {
+      sendVerificationEmail: jest.fn(),
+      sendWelcomeEmail: jest.fn(),
+    } as unknown as jest.Mocked<EmailService>;
+
+    magicLinkRepository = {
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    } as unknown as jest.Mocked<Repository<MagicLink>>;
+
     service = new AuthService(
       usersService, 
       jwtService as any, 
       configService as any,
-      blacklistedTokenRepository
+      emailService,
+      blacklistedTokenRepository,
+      magicLinkRepository
     );
   });
 
-  it('should register a user and return token', async () => {
+  it('should register a user and return message', async () => {
     const dto: RegisterDto = { 
       name: 'New User', 
       email: 'new@example.com', 
       password: 'Secret123', 
       role: UserRole.STUDENT 
     };
-    const user = { id: '1', name: dto.name, email: dto.email, password: 'hashed', role: UserRole.STUDENT } as any;
+    const user = { id: '1', name: dto.name, email: dto.email, password: 'hashed', role: UserRole.STUDENT, isEmailVerified: false } as any;
     usersService.create.mockResolvedValue(user);
-    jwtService.signAsync.mockResolvedValue('token');
+    usersService.findByEmail.mockResolvedValue(user);
+    magicLinkRepository.findOne.mockResolvedValue(null);
+    magicLinkRepository.create.mockReturnValue({} as any);
+    magicLinkRepository.save.mockResolvedValue({} as any);
+    emailService.sendVerificationEmail.mockResolvedValue(undefined);
 
     const result = await service.register(dto);
 
     expect(usersService.create).toHaveBeenCalledWith(dto);
-    expect(result.accessToken).toBe('token');
+    expect(result.message).toBe('Account created successfully. Please check your email to verify your account.');
     expect(result.user).toEqual(user);
   });
 
-  it('should login and return token when credentials are valid', async () => {
+  it('should login and return token when credentials are valid and email is verified', async () => {
     const dto: LoginDto = { email: 'test@example.com', password: 'Secret123' };
     const hashed = await bcrypt.hash(dto.password, 10);
-    const user = { id: '1', email: dto.email, password: hashed, role: UserRole.STUDENT } as any;
+    const user = { 
+      id: '1', 
+      email: dto.email, 
+      password: hashed, 
+      role: UserRole.STUDENT, 
+      isEmailVerified: true 
+    } as any;
     usersService.findByEmail.mockResolvedValue(user);
     jwtService.signAsync.mockResolvedValue('token');
 
@@ -78,6 +107,31 @@ describe('AuthService', () => {
 
     expect(usersService.findByEmail).toHaveBeenCalledWith(dto.email);
     expect(result.accessToken).toBe('token');
+    expect(result.user).toEqual(user);
+  });
+
+  it('should not return accessToken when email is not verified', async () => {
+    const dto: LoginDto = { email: 'test@example.com', password: 'Secret123' };
+    const hashed = await bcrypt.hash(dto.password, 10);
+    const user = { 
+      id: '1', 
+      email: dto.email, 
+      password: hashed, 
+      role: UserRole.STUDENT, 
+      isEmailVerified: false 
+    } as any;
+    usersService.findByEmail.mockResolvedValue(user);
+    magicLinkRepository.findOne.mockResolvedValue(null);
+    magicLinkRepository.create.mockReturnValue({} as any);
+    magicLinkRepository.save.mockResolvedValue({} as any);
+    emailService.sendVerificationEmail.mockResolvedValue(undefined);
+
+    const result = await service.login(dto);
+
+    expect(usersService.findByEmail).toHaveBeenCalledWith(dto.email);
+    expect(result.accessToken).toBeUndefined();
+    expect(result.emailVerified).toBe(false);
+    expect(result.user).toEqual(user);
   });
 
   it('should throw when user not found', async () => {
@@ -91,7 +145,13 @@ describe('AuthService', () => {
   it('should throw when password is invalid', async () => {
     const dto: LoginDto = { email: 'test@example.com', password: 'Secret123' };
     const hashed = await bcrypt.hash('AnotherPassword', 10);
-    usersService.findByEmail.mockResolvedValue({ id: '1', email: dto.email, password: hashed, role: UserRole.STUDENT } as any);
+    usersService.findByEmail.mockResolvedValue({ 
+      id: '1', 
+      email: dto.email, 
+      password: hashed, 
+      role: UserRole.STUDENT,
+      isEmailVerified: true 
+    } as any);
 
     await expect(service.login(dto)).rejects.toBeInstanceOf(UnauthorizedException);
   });
@@ -104,14 +164,26 @@ describe('AuthService', () => {
       role: UserRole.ADMIN 
     };
     const currentUser = { id: '1', role: UserRole.ADMIN } as any;
-    const user = { id: '2', name: dto.name, email: dto.email, password: 'hashed', role: UserRole.ADMIN } as any;
+    const user = { 
+      id: '2', 
+      name: dto.name, 
+      email: dto.email, 
+      password: 'hashed', 
+      role: UserRole.ADMIN,
+      isEmailVerified: false 
+    } as any;
     usersService.create.mockResolvedValue(user);
-    jwtService.signAsync.mockResolvedValue('token');
+    usersService.findByEmail.mockResolvedValue(user);
+    magicLinkRepository.findOne.mockResolvedValue(null);
+    magicLinkRepository.create.mockReturnValue({} as any);
+    magicLinkRepository.save.mockResolvedValue({} as any);
+    emailService.sendVerificationEmail.mockResolvedValue(undefined);
 
     const result = await service.register(dto, currentUser);
 
     expect(usersService.create).toHaveBeenCalledWith(dto);
-    expect(result.accessToken).toBe('token');
+    expect(result.message).toBe('Account created successfully. Please check your email to verify your account.');
+    expect(result.user).toEqual(user);
   });
 
   it('should prevent non-admin from creating admin', async () => {
@@ -144,13 +216,24 @@ describe('AuthService', () => {
       password: 'Secret123',
       role: UserRole.STUDENT
     };
-    const user = { id: '1', name: dto.name, email: dto.email, password: 'hashed', role: UserRole.STUDENT } as any;
+    const user = { 
+      id: '1', 
+      name: dto.name, 
+      email: dto.email, 
+      password: 'hashed', 
+      role: UserRole.STUDENT,
+      isEmailVerified: false 
+    } as any;
     usersService.create.mockResolvedValue(user);
-    jwtService.signAsync.mockResolvedValue('token');
+    usersService.findByEmail.mockResolvedValue(user);
+    magicLinkRepository.findOne.mockResolvedValue(null);
+    magicLinkRepository.create.mockReturnValue({} as any);
+    magicLinkRepository.save.mockResolvedValue({} as any);
+    emailService.sendVerificationEmail.mockResolvedValue(undefined);
 
     const result = await service.register(dto);
 
-    expect(result.accessToken).toBe('token');
+    expect(result.message).toBe('Account created successfully. Please check your email to verify your account.');
     expect(result.user).toEqual(user);
   });
 

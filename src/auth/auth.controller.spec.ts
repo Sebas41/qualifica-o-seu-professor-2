@@ -16,6 +16,7 @@ describe('AuthController', () => {
     name: 'Test User',
     role: UserRole.STUDENT,
     password: 'hashedPassword',
+    isEmailVerified: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -59,7 +60,7 @@ describe('AuthController', () => {
       };
 
       const mockResult = {
-        accessToken: 'mock-token',
+        message: 'Account created successfully. Please check your email to verify your account.',
         user: mockUser,
       };
 
@@ -69,12 +70,13 @@ describe('AuthController', () => {
       const result = await controller.register(registerDto, req);
 
       expect(result).toEqual({
-        accessToken: 'mock-token',
+        message: 'Account created successfully. Please check your email to verify your account.',
         user: {
           id: mockUser.id,
           email: mockUser.email,
           name: mockUser.name,
           role: mockUser.role,
+          isEmailVerified: mockUser.isEmailVerified,
           createdAt: mockUser.createdAt,
           updatedAt: mockUser.updatedAt,
         },
@@ -92,7 +94,7 @@ describe('AuthController', () => {
 
       const adminUser = { ...mockUser, role: UserRole.ADMIN };
       const mockResult = {
-        accessToken: 'mock-token',
+        message: 'Account created successfully. Please check your email to verify your account.',
         user: adminUser,
       };
 
@@ -114,7 +116,7 @@ describe('AuthController', () => {
       };
 
       mockAuthService.register.mockResolvedValue({
-        accessToken: 'mock-token',
+        message: 'Account created successfully. Please check your email to verify your account.',
         user: mockUser,
       });
 
@@ -126,7 +128,7 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    it('should login a user successfully', async () => {
+    it('should login a user with verified email successfully', async () => {
       const loginDto: LoginDto = {
         email: 'test@example.com',
         password: 'password123',
@@ -135,6 +137,7 @@ describe('AuthController', () => {
       const mockResult = {
         accessToken: 'mock-token',
         user: mockUser,
+        emailVerified: true,
       };
 
       mockAuthService.login.mockResolvedValue(mockResult);
@@ -143,15 +146,51 @@ describe('AuthController', () => {
 
       expect(result).toEqual({
         token: 'mock-token',
+        emailVerified: true,
         user: {
           id: mockUser.id,
           email: mockUser.email,
           name: mockUser.name,
           role: mockUser.role,
+          isEmailVerified: mockUser.isEmailVerified,
           createdAt: mockUser.createdAt,
           updatedAt: mockUser.updatedAt,
         },
       });
+      expect(authService.login).toHaveBeenCalledWith(loginDto);
+    });
+
+    it('should return email verification message for unverified email', async () => {
+      const loginDto: LoginDto = {
+        email: 'test@example.com',
+        password: 'password123',
+      };
+
+      const unverifiedUser = { ...mockUser, isEmailVerified: false };
+      const mockResult = {
+        emailVerified: false,
+        message: 'Email not verified. A new verification link has been sent to your email.',
+        user: unverifiedUser,
+      };
+
+      mockAuthService.login.mockResolvedValue(mockResult);
+
+      const result = await controller.login(loginDto);
+
+      expect(result).toEqual({
+        emailVerified: false,
+        message: 'Email not verified. A new verification link has been sent to your email.',
+        user: {
+          id: unverifiedUser.id,
+          email: unverifiedUser.email,
+          name: unverifiedUser.name,
+          role: unverifiedUser.role,
+          isEmailVerified: unverifiedUser.isEmailVerified,
+          createdAt: unverifiedUser.createdAt,
+          updatedAt: unverifiedUser.updatedAt,
+        },
+      });
+      expect(result).not.toHaveProperty('token');
       expect(authService.login).toHaveBeenCalledWith(loginDto);
     });
 
@@ -164,6 +203,7 @@ describe('AuthController', () => {
       mockAuthService.login.mockResolvedValue({
         accessToken: 'mock-token',
         user: mockUser,
+        emailVerified: true,
       });
 
       const result = await controller.login(loginDto);
@@ -200,6 +240,7 @@ describe('AuthController', () => {
         email: mockUser.email,
         name: mockUser.name,
         role: mockUser.role,
+        isEmailVerified: mockUser.isEmailVerified,
         createdAt: mockUser.createdAt,
         updatedAt: mockUser.updatedAt,
       });

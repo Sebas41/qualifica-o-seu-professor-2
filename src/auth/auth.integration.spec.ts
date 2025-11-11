@@ -10,6 +10,8 @@ import { UsersService } from '../users/users.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { BlacklistedToken } from './entities/blacklisted-token.entity';
+import { MagicLink } from './entities/magic-link.entity';
+import { EmailService } from './email.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 describe('AuthController Integration Tests', () => {
@@ -36,6 +38,21 @@ describe('AuthController Integration Tests', () => {
       remove: jest.fn(),
     };
 
+    const mockMagicLinkRepository = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      remove: jest.fn(),
+    };
+
+    const mockEmailService = {
+      sendVerificationEmail: jest.fn(),
+      sendWelcomeEmail: jest.fn(),
+    };
+
     module = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot(),
@@ -57,6 +74,14 @@ describe('AuthController Integration Tests', () => {
           provide: getRepositoryToken(BlacklistedToken),
           useValue: mockBlacklistedTokenRepository,
         },
+        {
+          provide: getRepositoryToken(MagicLink),
+          useValue: mockMagicLinkRepository,
+        },
+        {
+          provide: EmailService,
+          useValue: mockEmailService,
+        },
       ],
     }).compile();
 
@@ -74,7 +99,7 @@ describe('AuthController Integration Tests', () => {
   });
 
   describe('POST /auth/register - Integration', () => {
-    it('should register a new user and return access token', async () => {
+    it('should register a new user and return verification message', async () => {
       const registerDto = {
         name: 'Test User',
         email: 'test@example.com',
@@ -88,17 +113,21 @@ describe('AuthController Integration Tests', () => {
         email: registerDto.email.toLowerCase(),
         password: 'hashed-password',
         role: UserRole.STUDENT,
+        isEmailVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       } as User;
 
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(userRepository, 'findOne')
+        .mockResolvedValueOnce(null) // Para el check de email existente en create
+        .mockResolvedValueOnce(savedUser); // Para sendVerificationEmail
       jest.spyOn(userRepository, 'create').mockReturnValue(savedUser);
       jest.spyOn(userRepository, 'save').mockResolvedValue(savedUser);
 
       const result = await authController.register(registerDto, { user: undefined } as any);
 
-      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('message');
+      expect(result.message).toContain('verify');
       expect(result).toHaveProperty('user');
       expect(result.user.email).toBe('test@example.com');
       expect(result.user.role).toBe(UserRole.STUDENT);
@@ -157,17 +186,20 @@ describe('AuthController Integration Tests', () => {
         email: registerDto.email.toLowerCase(),
         password: 'hashed-password',
         role: UserRole.ADMIN,
+        isEmailVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       } as User;
 
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(userRepository, 'findOne')
+        .mockResolvedValueOnce(null) // Para el check de email existente en create
+        .mockResolvedValueOnce(savedUser); // Para sendVerificationEmail
       jest.spyOn(userRepository, 'create').mockReturnValue(savedUser);
       jest.spyOn(userRepository, 'save').mockResolvedValue(savedUser);
 
       const result = await authController.register(registerDto, { user: currentAdmin } as any);
 
-      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('message');
       expect(result.user.role).toBe(UserRole.ADMIN);
     });
   });
@@ -185,6 +217,7 @@ describe('AuthController Integration Tests', () => {
         password: '$2b$10$YourHashedPasswordHere',
         role: UserRole.STUDENT,
         name: 'Test User',
+        isEmailVerified: true,
       } as User;
 
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(user);
