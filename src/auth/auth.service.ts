@@ -53,8 +53,8 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<{ accessToken?: string; user: User; emailVerified?: boolean }> {
     const user = await this.validateUser(loginDto.email, loginDto.password);
     
-    // Verificar si el email está verificado
-    if (!user.isEmailVerified) {
+    // Verificar si el email está verificado (verificar explícitamente false, null o undefined)
+    if (user.isEmailVerified !== true) {
       // Enviar nuevo link de verificación
       await this.sendVerificationEmail(user.email);
       
