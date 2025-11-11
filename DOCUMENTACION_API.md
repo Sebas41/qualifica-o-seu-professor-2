@@ -930,7 +930,48 @@ Authorization: Bearer {token}
 
 ---
 
-### 6. Obtener Calificación Promedio del Profesor
+### 6. Obtener Todos los Comentarios de un Profesor
+
+**GET** `/api/comments/professor/:professorId/comments`
+
+**Descripción**: Obtiene todos los comentarios de un profesor específico.
+
+**Acceso**: Público
+
+**Parámetros URL**:
+- `professorId`: UUID del profesor
+
+**Respuesta Exitosa (200)**:
+```json
+[
+  {
+    "id": "uuid",
+    "content": "Great professor!",
+    "rating": 5,
+    "professor": {
+      "id": "uuid",
+      "name": "Dr. John Smith",
+      "department": "Computer Science",
+      "university": {
+        "id": "uuid",
+        "name": "University of Example",
+        "location": "Example City"
+      }
+    },
+    "student": {
+      "id": "uuid",
+      "name": "John Doe",
+      "email": "john@example.com"
+    },
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
+```
+
+---
+
+### 7. Obtener Calificación Promedio del Profesor
 
 **GET** `/api/comments/professor/:professorId/rating`
 

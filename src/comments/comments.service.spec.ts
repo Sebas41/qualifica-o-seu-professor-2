@@ -342,6 +342,51 @@ describe('CommentsService', () => {
     });
   });
 
+  describe('findByProfessor', () => {
+    it('should return all comments for a professor', async () => {
+      const mockComments = [
+        {
+          id: '1',
+          content: 'Great professor!',
+          rating: 5,
+          professorId: 'prof-1',
+          studentId: 'student-1',
+        } as Comment,
+        {
+          id: '2',
+          content: 'Excellent teacher!',
+          rating: 5,
+          professorId: 'prof-1',
+          studentId: 'student-2',
+        } as Comment,
+      ];
+
+      repository.find.mockResolvedValue(mockComments);
+
+      const result = await service.findByProfessor('prof-1');
+
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { professorId: 'prof-1' },
+        relations: ['student', 'professor', 'professor.university'],
+        order: { createdAt: 'DESC' },
+      });
+      expect(result).toEqual(mockComments);
+    });
+
+    it('should return empty array if professor has no comments', async () => {
+      repository.find.mockResolvedValue([]);
+
+      const result = await service.findByProfessor('prof-2');
+
+      expect(result).toEqual([]);
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { professorId: 'prof-2' },
+        relations: ['student', 'professor', 'professor.university'],
+        order: { createdAt: 'DESC' },
+      });
+    });
+  });
+
   describe('getProfessorAverageRating', () => {
     it('should return average rating and count', async () => {
       queryBuilder.getRawOne.mockResolvedValue({
