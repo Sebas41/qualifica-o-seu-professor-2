@@ -5,10 +5,12 @@ API para calificar y evaluar profesores universitarios.
 ## 🚀 Características
 
 - Autenticación JWT con roles (Admin/Student)
+- **Magic Link**: Autenticación sin contraseña por email
 - CRUD de Universidades, Profesores y Calificaciones
 - Sistema de seed automático con datos de prueba
 - Documentación Swagger/OpenAPI
 - Tests unitarios con Jest
+- Envío de emails con Nodemailer
 
 ## 📋 Requisitos Previos
 
@@ -87,6 +89,7 @@ POST http://localhost:3000/api/seed
 
 Una vez iniciada la aplicación, visita:
 - Swagger UI: `http://localhost:3000/api/docs`
+- [Documentación completa de Magic Link](./MAGIC_LINK_SETUP.md)
 
 ## 🧪 Tests
 

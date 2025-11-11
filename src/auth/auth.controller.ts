@@ -1,5 +1,5 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { Public } from '../common/decorators/public.decorator';
 import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
@@ -7,6 +7,7 @@ import { User } from '../users/entities/user.entity';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 
 @ApiTags('Authentication')
 @ApiBearerAuth()
@@ -23,18 +24,19 @@ export class AuthController {
   })
   @ApiResponse({ 
     status: 201, 
-    description: 'User registered successfully',
+    description: 'User registered successfully. Verification email sent.',
     schema: {
       type: 'object',
       properties: {
-        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+        message: { type: 'string', example: 'Account created successfully. Please check your email to verify your account.' },
         user: {
           type: 'object',
           properties: {
             id: { type: 'string', example: 'uuid' },
             email: { type: 'string', example: 'user@example.com' },
             name: { type: 'string', example: 'John Doe' },
-            role: { type: 'string', enum: ['admin', 'student'], example: 'student' }
+            role: { type: 'string', enum: ['admin', 'student'], example: 'student' },
+            isEmailVerified: { type: 'boolean', example: false }
           }
         }
       }
@@ -46,9 +48,9 @@ export class AuthController {
   async register(@Body() registerDto: RegisterDto, @Req() req: Request) {
     // If the user is authenticated, use their information to validate roles
     const currentUser = req.user as User | undefined;
-    const { accessToken, user } = await this.authService.register(registerDto, currentUser);
+    const { message, user } = await this.authService.register(registerDto, currentUser);
     const { password, ...rest } = user;
-    return { accessToken, user: rest };
+    return { message, user: rest };
   }
 
   @Public()
@@ -103,10 +105,43 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Login response',
+    schema: {
+      oneOf: [
+        {
+          type: 'object',
+          properties: {
+            token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+            user: { type: 'object' },
+            emailVerified: { type: 'boolean', example: true }
+          }
+        },
+        {
+          type: 'object',
+          properties: {
+            message: { type: 'string', example: 'Email not verified. A new verification link has been sent to your email.' },
+            user: { type: 'object' },
+            emailVerified: { type: 'boolean', example: false }
+          }
+        }
+      ]
+    }
+  })
   async login(@Body() loginDto: LoginDto) {
-    const { accessToken, user } = await this.authService.login(loginDto);
-    const { password, ...rest } = user;
-    return { token: accessToken, user: rest };
+    const result = await this.authService.login(loginDto);
+    const { password, ...rest } = result.user;
+    
+    if (!result.emailVerified) {
+      return { 
+        message: 'Email not verified. A new verification link has been sent to your email.',
+        user: rest,
+        emailVerified: false
+      };
+    }
+    
+    return { token: result.accessToken, user: rest, emailVerified: true };
   }
 
   @Get('me')
@@ -171,5 +206,73 @@ export class AuthController {
     }
 
     return this.authService.logout(token);
+  }
+
+  @Public()
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Resend email verification link',
+    description: 'Sends a new verification link to the user email. The previous link will be invalidated. The link expires in 15 minutes.'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Verification email sent successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { 
+          type: 'string', 
+          example: 'Verification email sent. Please check your inbox.' 
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'User not found or email already verified' })
+  @ApiResponse({ status: 500, description: 'Failed to send email' })
+  async resendVerification(@Body() requestMagicLinkDto: RequestMagicLinkDto) {
+    return this.authService.sendVerificationEmail(requestMagicLinkDto.email);
+  }
+
+  @Public()
+  @Get('verify-email')
+  @ApiOperation({ 
+    summary: 'Verify email address',
+    description: 'Verifies the email using the token received via email. After verification, the user can login with their credentials. The verification link can only be used once and expires after 15 minutes.'
+  })
+  @ApiQuery({ 
+    name: 'token', 
+    required: true, 
+    description: 'Verification token received via email',
+    example: '550e8400-e29b-41d4-a716-446655440000'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Email verified successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { 
+          type: 'string', 
+          example: 'Email verified successfully. You can now login.'
+        },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'uuid' },
+            email: { type: 'string', example: 'user@example.com' },
+            name: { type: 'string', example: 'John Doe' },
+            role: { type: 'string', enum: ['admin', 'student'], example: 'student' },
+            isEmailVerified: { type: 'boolean', example: true }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Invalid, expired, or already used verification link' })
+  async verifyEmail(@Query('token') token: string) {
+    const { message, user } = await this.authService.verifyEmail(token);
+    const { password, ...rest } = user;
+    return { message, user: rest };
   }
 }

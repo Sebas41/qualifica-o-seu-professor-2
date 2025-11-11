@@ -29,6 +29,9 @@ export class User {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.STUDENT })
   role!: UserRole;
 
+  @Column({ name: 'is_email_verified', default: false, type: 'boolean' })
+  isEmailVerified!: boolean;
+
   @OneToMany(() => Comment, (comment) => comment.student)
   comments!: Comment[];
 
