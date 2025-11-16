@@ -13,7 +13,12 @@ async function bootstrap() {
 
   // Leer configuración de CORS desde .env
   const frontendUrl = configService.get('FRONTEND_URL', 'http://localhost:3001');
-  const allowedOrigins = [frontendUrl];
+  const nodeEnv = configService.get('NODE_ENV', 'development');
+  
+  // En desarrollo, permitir todos los orígenes
+  const allowedOrigins = nodeEnv === 'development' 
+    ? ['http://localhost:3001', 'http://localhost:3000']
+    : [frontendUrl];
   
   // Agregar orígenes adicionales si existen (separados por coma)
   const additionalOrigins = configService.get('CORS_ORIGINS', '');
