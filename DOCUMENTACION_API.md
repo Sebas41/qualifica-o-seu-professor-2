@@ -505,6 +505,48 @@ Authorization: Bearer {token}
 
 ---
 
+### 6. Obtener Profesores de una Universidad
+
+**GET** `/api/universities/:id/professors`
+
+**Descripción**: Obtiene todos los profesores que pertenecen a una universidad específica.
+
+**Acceso**: Público
+
+**Parámetros URL**:
+- `id`: UUID de la universidad
+
+**Respuesta Exitosa (200)**:
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Dr. John Doe",
+    "department": "Computer Science",
+    "universityId": "uuid",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "uuid",
+    "name": "Dr. Jane Smith",
+    "department": "Mathematics",
+    "universityId": "uuid",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
+```
+
+**Notas**:
+- Si la universidad no tiene profesores, devuelve un array vacío `[]`
+- El endpoint valida que la universidad exista antes de devolver la lista
+
+**Errores**:
+- `404`: Universidad no encontrada
+
+---
+
 ## Profesores
 
 **Base Path**: `/api/professors`

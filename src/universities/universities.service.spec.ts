@@ -210,4 +210,50 @@ describe('UniversitiesService', () => {
       await expect(service.remove('999')).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe('findProfessors', () => {
+    it('should return professors of a university', async () => {
+      const professors = [
+        { id: '1', name: 'Prof. John Doe', department: 'Computer Science' },
+        { id: '2', name: 'Prof. Jane Smith', department: 'Mathematics' },
+      ];
+
+      const university = {
+        id: '1',
+        name: 'MIT',
+        professors,
+      } as unknown as University;
+
+      repository.findOne.mockResolvedValue(university);
+
+      const result = await service.findProfessors('1');
+
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { id: '1' },
+        relations: ['professors'],
+      });
+      expect(result).toEqual(professors);
+    });
+
+    it('should return empty array when university has no professors', async () => {
+      const university = {
+        id: '1',
+        name: 'MIT',
+        professors: [],
+      } as unknown as University;
+
+      repository.findOne.mockResolvedValue(university);
+
+      const result = await service.findProfessors('1');
+
+      expect(result).toEqual([]);
+    });
+
+    it('should throw NotFoundException when university not found', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(service.findProfessors('999')).rejects.toThrow(NotFoundException);
+      await expect(service.findProfessors('999')).rejects.toThrow('University with ID 999 not found');
+    });
+  });
 });

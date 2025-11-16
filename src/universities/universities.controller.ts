@@ -73,6 +73,35 @@ export class UniversitiesController {
     return this.universitiesService.findOne(id);
   }
 
+  @Public()
+  @Get(':id/professors')
+  @ApiOperation({ 
+    summary: 'Get professors of a university',
+    description: 'Retrieves all professors that belong to a specific university. This endpoint is public.'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Professors retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', example: 'uuid' },
+          name: { type: 'string', example: 'John Doe' },
+          department: { type: 'string', example: 'Computer Science' },
+          universityId: { type: 'string', example: 'uuid' },
+          createdAt: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' },
+          updatedAt: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'University not found' })
+  async findProfessors(@Param('id') id: string) {
+    return this.universitiesService.findProfessors(id);
+  }
+
   @Roles(UserRole.ADMIN)
   @Post()
   @ApiOperation({ 
