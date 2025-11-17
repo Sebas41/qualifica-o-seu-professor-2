@@ -20,9 +20,18 @@ import { UsersModule } from './users/users.module';
         type: 'postgres',
         host: configService.get('DB_HOST', 'localhost'),
         port: Number(configService.get('DB_PORT', 5432)),
-        username: configService.get('DB_USER', 'postgres'),
-        password: configService.get('DB_PASS', 'postgres'),
-        database: configService.get('DB_NAME', 'qualifica'),
+        username:
+          configService.get<string>('DB_USER') ??
+          configService.get<string>('DB_USERNAME') ??
+          'postgres',
+        password:
+          configService.get<string>('DB_PASS') ??
+          configService.get<string>('DB_PASSWORD') ??
+          'postgres',
+        database:
+          configService.get<string>('DB_NAME') ??
+          configService.get<string>('DB_DATABASE') ??
+          'qualifica',
         autoLoadEntities: true,
         synchronize: configService.get('DB_SYNC', 'false') === 'true',
       }),

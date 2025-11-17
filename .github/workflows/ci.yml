@@ -20,6 +20,8 @@ jobs:
           node-version: '20'
 
       - name: Start Postgres with Docker Compose
+        env:
+          DB_PORT: 5432
         run: docker compose -f docker-compose.yml up -d
 
       - name: Wait for Postgres to be ready
