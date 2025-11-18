@@ -16,8 +16,8 @@ async function bootstrap() {
   const nodeEnv = configService.get('NODE_ENV', 'development');
   
   // En desarrollo, permitir todos los orígenes
-  const allowedOrigins = nodeEnv === 'development' 
-    ? ['http://localhost:3001', 'http://localhost:3000']
+  const allowedOrigins = nodeEnv === 'development'
+    ? ['http://localhost:3001', 'http://localhost:3000','https://qualifica-o-seu-professor-front.vercel.app']
     : [frontendUrl];
   
   // Agregar orígenes adicionales si existen (separados por coma)
