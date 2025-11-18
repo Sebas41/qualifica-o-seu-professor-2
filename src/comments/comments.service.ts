@@ -142,4 +142,14 @@ export class CommentsService {
 
     return comments;
   }
+
+  async findByUser(userId: string): Promise<Comment[]> {
+    const comments = await this.commentRepository.find({
+      where: { studentId: userId },
+      relations: ['student', 'professor', 'professor.university'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return comments;
+  }
 }
