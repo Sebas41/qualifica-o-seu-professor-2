@@ -505,6 +505,48 @@ Authorization: Bearer {token}
 
 ---
 
+### 6. Obtener Profesores de una Universidad
+
+**GET** `/api/universities/:id/professors`
+
+**Descripción**: Obtiene todos los profesores que pertenecen a una universidad específica.
+
+**Acceso**: Público
+
+**Parámetros URL**:
+- `id`: UUID de la universidad
+
+**Respuesta Exitosa (200)**:
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Dr. John Doe",
+    "department": "Computer Science",
+    "universityId": "uuid",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "uuid",
+    "name": "Dr. Jane Smith",
+    "department": "Mathematics",
+    "universityId": "uuid",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
+```
+
+**Notas**:
+- Si la universidad no tiene profesores, devuelve un array vacío `[]`
+- El endpoint valida que la universidad exista antes de devolver la lista
+
+**Errores**:
+- `404`: Universidad no encontrada
+
+---
+
 ## Profesores
 
 **Base Path**: `/api/professors`
@@ -930,7 +972,48 @@ Authorization: Bearer {token}
 
 ---
 
-### 6. Obtener Calificación Promedio del Profesor
+### 6. Obtener Todos los Comentarios de un Profesor
+
+**GET** `/api/comments/professor/:professorId/comments`
+
+**Descripción**: Obtiene todos los comentarios de un profesor específico.
+
+**Acceso**: Público
+
+**Parámetros URL**:
+- `professorId`: UUID del profesor
+
+**Respuesta Exitosa (200)**:
+```json
+[
+  {
+    "id": "uuid",
+    "content": "Great professor!",
+    "rating": 5,
+    "professor": {
+      "id": "uuid",
+      "name": "Dr. John Smith",
+      "department": "Computer Science",
+      "university": {
+        "id": "uuid",
+        "name": "University of Example",
+        "location": "Example City"
+      }
+    },
+    "student": {
+      "id": "uuid",
+      "name": "John Doe",
+      "email": "john@example.com"
+    },
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
+```
+
+---
+
+### 7. Obtener Calificación Promedio del Profesor
 
 **GET** `/api/comments/professor/:professorId/rating`
 
@@ -1089,5 +1172,7 @@ Authorization: Bearer {tu_token_aqui}
 5. **UUIDs**: Todos los IDs son UUIDs (Universally Unique Identifiers).
 
 6. **Timestamps**: Todas las entidades incluyen `createdAt` y `updatedAt` con formato ISO 8601.
+
+
 
 

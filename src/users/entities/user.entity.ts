@@ -1,13 +1,13 @@
 import * as bcrypt from 'bcrypt';
 import {
-  BeforeInsert,
-  BeforeUpdate,
-  Column,
-  CreateDateColumn,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+    BeforeInsert,
+    BeforeUpdate,
+    Column,
+    CreateDateColumn,
+    Entity,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 import { Comment } from '../../comments/entities/comment.entity';
 import { UserRole } from '../../common/enums/role.enum';
@@ -28,6 +28,9 @@ export class User {
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.STUDENT })
   role!: UserRole;
+
+  @Column({ name: 'is_email_verified', default: false, type: 'boolean' })
+  isEmailVerified!: boolean;
 
   @OneToMany(() => Comment, (comment) => comment.student)
   comments!: Comment[];

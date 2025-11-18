@@ -58,30 +58,46 @@ export class SeedService {
 
       // 1. Crear usuarios (incluyendo admin)
       this.logger.log('Generando usuarios...');
-      const usersData: Partial<User>[] = [];
+      const users: User[] = [];
 
       // Admin con credenciales específicas
       const adminPassword = await bcrypt.hash('admin123', 10);
-      usersData.push({
+      const adminUser = this.userRepository.create({
         name: 'Super Admin',
         email: 'admin@example.com',
         password: adminPassword,
         role: UserRole.ADMIN,
       });
+      adminUser.isEmailVerified = true; // Establecer explícitamente después de create
+      users.push(adminUser);
 
       // Usuarios normales (estudiantes)
       const normalPassword = await bcrypt.hash('password123', 10);
       for (let i = 0; i < counts.users; i++) {
-        usersData.push({
+        const studentUser = this.userRepository.create({
           name: faker.person.fullName(),
           email: `user${i}@example.com`,
           password: normalPassword,
           role: UserRole.STUDENT,
         });
+        studentUser.isEmailVerified = true; // Establecer explícitamente después de create
+        users.push(studentUser);
       }
 
-      const users = await this.userRepository.save(usersData);
-      this.logger.log(`${users.length} usuarios creados`);
+      // Guardar usuarios con valores explícitos
+      const savedUsers = await this.userRepository.save(users);
+      this.logger.log(`${savedUsers.length} usuarios creados`);
+      
+      // Asegurar que todos los usuarios del seed estén verificados (por si acaso)
+      await this.userRepository
+        .createQueryBuilder()
+        .update(User)
+        .set({ isEmailVerified: true })
+        .where('email LIKE :pattern1 OR email = :adminEmail', {
+          pattern1: 'user%@example.com',
+          adminEmail: 'admin@example.com',
+        })
+        .execute();
 
       // 2. Crear universidades
       this.logger.log('Generando universidades...');

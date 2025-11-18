@@ -3,7 +3,9 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -109,6 +111,37 @@ export class UsersController {
   }
 
   @Roles(UserRole.ADMIN)
+  @Get('email/:email')
+  @ApiOperation({ 
+    summary: 'Get user by email',
+    description: 'Retrieves a specific user by their email address. Only admins can access this endpoint.'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'User retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', example: 'uuid' },
+        email: { type: 'string', example: 'user@example.com' },
+        name: { type: 'string', example: 'John Doe' },
+        role: { type: 'string', enum: ['admin', 'student'], example: 'student' },
+        createdAt: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' },
+        updatedAt: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' }
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden: Only admins can access this endpoint' })
+  async findByEmail(@Param('email') email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
+    }
+    return this.sanitizeUser(user);
+  }
+
+  @Roles(UserRole.ADMIN)
   @Get(':id')
   @ApiOperation({ 
     summary: 'Get user by ID',
@@ -136,11 +169,10 @@ export class UsersController {
     return this.sanitizeUser(user);
   }
 
-  @Roles(UserRole.ADMIN)
   @Patch(':id')
   @ApiOperation({ 
     summary: 'Update user by ID',
-    description: 'Updates a specific user by their ID. Only admins can update users.'
+    description: 'Updates a specific user. Users can update their own profile, admins can update any user.'
   })
   @ApiResponse({ 
     status: 200, 
@@ -159,22 +191,40 @@ export class UsersController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @ApiResponse({ status: 403, description: 'Forbidden: Only admins can update users' })
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  @ApiResponse({ status: 403, description: 'Forbidden: You can only update your own profile unless you are an admin' })
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Req() req: Request) {
+    const currentUser = req.user as any;
+    
+    // Verificar que el usuario solo pueda editar su propio perfil, a menos que sea admin
+    if (currentUser.id !== id && currentUser.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('You can only update your own profile');
+    }
+    
+    // Si no es admin, no puede cambiar el rol
+    if (currentUser.role !== UserRole.ADMIN && updateUserDto.role) {
+      throw new ForbiddenException('Only admins can change user roles');
+    }
+    
     const user = await this.usersService.update(id, updateUserDto);
     return this.sanitizeUser(user);
   }
 
-  @Roles(UserRole.ADMIN)
   @Delete(':id')
   @ApiOperation({ 
     summary: 'Delete user by ID',
-    description: 'Deletes a specific user by their ID. Only admins can delete users.'
+    description: 'Deletes a specific user. Users can delete their own account, admins can delete any user.'
   })
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @ApiResponse({ status: 403, description: 'Forbidden: Only admins can delete users' })
-  remove(@Param('id') id: string) {
+  @ApiResponse({ status: 403, description: 'Forbidden: You can only delete your own account unless you are an admin' })
+  async remove(@Param('id') id: string, @Req() req: Request) {
+    const currentUser = req.user as any;
+    
+    // Verificar que el usuario solo pueda borrar su propia cuenta, a menos que sea admin
+    if (currentUser.id !== id && currentUser.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('You can only delete your own account');
+    }
+    
     return this.usersService.remove(id);
   }
 

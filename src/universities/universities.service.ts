@@ -67,4 +67,17 @@ export class UniversitiesService {
     const university = await this.findOne(id);
     await this.universitiesRepository.remove(university);
   }
+
+  async findProfessors(id: string) {
+    const university = await this.universitiesRepository.findOne({
+      where: { id },
+      relations: ['professors']
+    });
+
+    if (!university) {
+      throw new NotFoundException(`University with ID ${id} not found`);
+    }
+
+    return university.professors;
+  }
 }

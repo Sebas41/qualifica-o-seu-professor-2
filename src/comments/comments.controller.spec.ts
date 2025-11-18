@@ -51,6 +51,7 @@ describe('CommentsController', () => {
     update: jest.fn(),
     remove: jest.fn(),
     getProfessorAverageRating: jest.fn(),
+    findByProfessor: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -292,6 +293,28 @@ describe('CommentsController', () => {
       await expect(controller.remove('1', req)).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+  });
+
+  describe('getProfessorComments', () => {
+    it('should return all comments for a professor', async () => {
+      const mockComments = [mockComment, { ...mockComment, id: '2' }];
+
+      mockCommentsService.findByProfessor.mockResolvedValue(mockComments as any);
+
+      const result = await controller.getProfessorComments('prof-1');
+
+      expect(result).toEqual(mockComments);
+      expect(service.findByProfessor).toHaveBeenCalledWith('prof-1');
+    });
+
+    it('should return empty array if professor has no comments', async () => {
+      mockCommentsService.findByProfessor.mockResolvedValue([]);
+
+      const result = await controller.getProfessorComments('prof-2');
+
+      expect(result).toEqual([]);
+      expect(service.findByProfessor).toHaveBeenCalledWith('prof-2');
     });
   });
 

@@ -1,9 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
-import { UniversitiesController } from './universities.controller';
-import { UniversitiesService } from './universities.service';
+import { Test, TestingModule } from '@nestjs/testing';
 import { CreateUniversityDto } from './dto/create-university.dto';
 import { UpdateUniversityDto } from './dto/update-university.dto';
+import { UniversitiesController } from './universities.controller';
+import { UniversitiesService } from './universities.service';
 
 describe('UniversitiesController', () => {
   let controller: UniversitiesController;
@@ -24,6 +24,7 @@ describe('UniversitiesController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    findProfessors: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -183,6 +184,53 @@ describe('UniversitiesController', () => {
       );
 
       await expect(controller.remove('999')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findProfessors', () => {
+    it('should return professors of a university', async () => {
+      const mockProfessors = [
+        {
+          id: '1',
+          name: 'Prof. John Doe',
+          department: 'Computer Science',
+          universityId: '1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: '2',
+          name: 'Prof. Jane Smith',
+          department: 'Mathematics',
+          universityId: '1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      mockUniversitiesService.findProfessors.mockResolvedValue(mockProfessors);
+
+      const result = await controller.findProfessors('1');
+
+      expect(result).toEqual(mockProfessors);
+      expect(service.findProfessors).toHaveBeenCalledWith('1');
+    });
+
+    it('should return empty array when university has no professors', async () => {
+      mockUniversitiesService.findProfessors.mockResolvedValue([]);
+
+      const result = await controller.findProfessors('1');
+
+      expect(result).toEqual([]);
+      expect(service.findProfessors).toHaveBeenCalledWith('1');
+    });
+
+    it('should throw NotFoundException if university not found', async () => {
+      mockUniversitiesService.findProfessors.mockRejectedValue(
+        new NotFoundException('University with ID "999" not found'),
+      );
+
+      await expect(controller.findProfessors('999')).rejects.toThrow(NotFoundException);
     });
   });
 });

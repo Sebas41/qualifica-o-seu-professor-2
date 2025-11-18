@@ -132,4 +132,24 @@ export class CommentsService {
       count: parseInt(result.count) || 0,
     };
   }
+
+  async findByProfessor(professorId: string): Promise<Comment[]> {
+    const comments = await this.commentRepository.find({
+      where: { professorId },
+      relations: ['student', 'professor', 'professor.university'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return comments;
+  }
+
+  async findByUser(userId: string): Promise<Comment[]> {
+    const comments = await this.commentRepository.find({
+      where: { studentId: userId },
+      relations: ['student', 'professor', 'professor.university'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return comments;
+  }
 }

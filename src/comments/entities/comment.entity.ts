@@ -35,7 +35,7 @@ export class Comment {
   @JoinColumn({ name: 'student_id' })
   student!: User;
 
-  @ManyToOne(() => Professor, (professor) => professor.comments)
+  @ManyToOne(() => Professor, (professor) => professor.comments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'professor_id' })
   professor!: Professor;
 

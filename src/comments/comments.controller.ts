@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UnauthorizedException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
 import { CommentsService } from './comments.service';
@@ -12,11 +12,10 @@ import { Comment } from './entities/comment.entity';
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
-  @Public()
   @Get()
   @ApiOperation({ 
-    summary: 'Get all comments',
-    description: 'Retrieves a list of all comments with optional filtering and pagination. This endpoint is public.'
+    summary: 'Get all comments (Admin only)',
+    description: 'Retrieves a list of all comments with optional filtering and pagination. Only admins can access all comments.'
   })
   @ApiQuery({ name: 'professor', required: false, description: 'Filter by professor ID' })
   @ApiQuery({ name: 'user', required: false, description: 'Filter by user ID' })
@@ -70,11 +69,95 @@ export class CommentsController {
     @Query('q') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Req() req?: any,
   ) {
+    const currentUser = req.user;
+    const userRole = currentUser?.role;
+
+
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
     
     return this.commentsService.findAll(professor, user, search, pageNum, limitNum);
+  }
+
+  @Get('me')
+  @ApiOperation({ 
+    summary: 'Get my comments',
+    description: 'Retrieves all comments made by the currently authenticated user'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'User comments retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', example: 'uuid' },
+          content: { type: 'string', example: 'Great professor!' },
+          rating: { type: 'number', example: 5 },
+          professor: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'uuid' },
+              name: { type: 'string', example: 'Dr. John Smith' },
+              department: { type: 'string', example: 'Computer Science' }
+            }
+          },
+          createdAt: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' },
+          updatedAt: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getMyComments(@Req() req: any): Promise<Comment[]> {
+    const userId = req.user.id;
+    return this.commentsService.findByUser(userId);
+  }
+
+  @Public()
+  @Get('professor/:professorId/comments')
+  @ApiOperation({ 
+    summary: 'Get all comments for a professor',
+    description: 'Retrieves all comments for a specific professor. This endpoint is public.'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Professor comments retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', example: 'uuid' },
+          content: { type: 'string', example: 'Great professor!' },
+          rating: { type: 'number', example: 5 },
+          professor: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'uuid' },
+              name: { type: 'string', example: 'Dr. John Smith' },
+              department: { type: 'string', example: 'Computer Science' }
+            }
+          },
+          student: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'uuid' },
+              name: { type: 'string', example: 'John Doe' },
+              email: { type: 'string', example: 'john@example.com' }
+            }
+          },
+          createdAt: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' },
+          updatedAt: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' }
+        }
+      }
+    }
+  })
+  async getProfessorComments(@Param('professorId') professorId: string): Promise<Comment[]> {
+    return this.commentsService.findByProfessor(professorId);
   }
 
   @Public()

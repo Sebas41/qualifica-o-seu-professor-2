@@ -25,11 +25,11 @@ export class Professor {
   @Column({ name: 'university_id' })
   universityId!: string;
 
-  @ManyToOne(() => University, (university) => university.professors)
+  @ManyToOne(() => University, (university) => university.professors, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'university_id' })
   university!: University;
 
-  @OneToMany(() => Comment, (comment) => comment.professor)
+  @OneToMany(() => Comment, (comment) => comment.professor, { cascade: true })
   comments!: Comment[];
 
   @CreateDateColumn({ name: 'created_at' })

@@ -22,7 +22,7 @@ export class University {
   @Column({ nullable: true })
   city?: string;
 
-  @OneToMany(() => Professor, (professor) => professor.university)
+  @OneToMany(() => Professor, (professor) => professor.university, { cascade: true })
   professors!: Professor[];
 
   @CreateDateColumn({ name: 'created_at' })
